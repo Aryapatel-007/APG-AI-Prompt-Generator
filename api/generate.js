@@ -1,65 +1,38 @@
 // Vercel Serverless Function (Node.js) - Corrected for compatibility
-// This securely handles requests from the frontend using the USER'S API key.
-
-// Helper to read JSON body for Vercel Node serverless (when req.body is undefined)
-function readJsonBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', chunk => { data += chunk; });
-    req.on('end', () => {
-      if (!data) return resolve({});
-      try {
-        resolve(JSON.parse(data));
-      } catch (e) {
-        reject(e);
-      }
-    });
-    req.on('error', reject);
-  });
-}
+// This securely handles requests from the frontend using a server-side API key.
 
 module.exports = async function handler(req, res) {
-  // Basic CORS (safe default; same-origin will also work)
+  // Handle CORS preflight requests for development and cross-domain access
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
 
-  // 1. Only allow POST requests
+  // 1. Ensure the request method is POST
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  // 2. Parse body robustly across environments
-  let body = req.body;
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    try {
-      body = await readJsonBody(req);
-    } catch (e) {
-      console.error('Invalid JSON body:', e);
-      return res.status(400).json({ error: 'Invalid JSON body' });
-    }
-  }
+  // Vercel's environment automatically parses the JSON body
+  const { prompt, systemInstruction } = req.body || {};
 
-  const { prompt, systemInstruction } = body || {};
-
-  // 3. Validate inputs
+  // 2. Validate that the necessary inputs are present
   if (!prompt && !systemInstruction) {
-    return res.status(400).json({ error: 'Prompt or system instruction is required.' });
+    return res.status(400).json({ error: 'A prompt or system instruction is required.' });
   }
 
-  // Use a single server-side API key from environment (do NOT expose to client)
+  // 3. Securely retrieve the API key from Vercel's environment variables
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_API_KEY) {
     console.error('GEMINI_API_KEY is not set in environment variables.');
-    return res.status(500).json({ error: 'Server misconfiguration: API key missing.' });
+    return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  // Use header-based auth and gemini-2.0-flash model as per user's API usage example
-  const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+  // 4. Use a valid and current Gemini model name
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
   const payload = {
     contents: [
@@ -68,50 +41,44 @@ module.exports = async function handler(req, res) {
         parts: [{ text: prompt || '' }],
       },
     ],
+    // Conditionally add system instructions if they exist
     ...(systemInstruction
       ? { systemInstruction: { parts: [{ text: systemInstruction }] } }
       : {}),
   };
 
   try {
-    // 4. Make the call to the official Gemini API
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-goog-api-key': GEMINI_API_KEY,
-    };
+    // 5. Make the fetch call to the official Gemini API
     const geminiResponse = await fetch(API_URL, {
       method: 'POST',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(payload),
     });
 
-    const rawText = await geminiResponse.text();
-    let responseData = {};
-    try { responseData = rawText ? JSON.parse(rawText) : {}; } catch (e) {
-      responseData = { parse_error: true, raw: rawText };
-    }
+    const responseData = await geminiResponse.json();
 
+    // Handle errors from the Gemini API itself
     if (!geminiResponse.ok) {
       console.error('Gemini API Error:', responseData);
-      const status = geminiResponse.status || 500;
-      const message = (responseData && responseData.error && responseData.error.message)
-        ? responseData.error.message
-        : 'An error occurred with the Gemini API.';
-      return res.status(status).json({ error: message, upstream: responseData });
+      const message = responseData?.error?.message || 'An unknown error occurred with the Gemini API.';
+      return res.status(geminiResponse.status).json({ error: message, upstream: responseData });
     }
 
-    // 5. Safely extract text
+    // 6. Safely extract the generated text from the successful response
     const text = responseData?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (typeof text === 'string' && text.length > 0) {
+    if (typeof text === 'string') {
       return res.status(200).json({ text });
+    } else {
+      // This is a fallback in case the response structure is unexpected
+      console.error('Could not extract text from Gemini response:', responseData);
+      return res.status(500).json({ error: 'Could not extract text from the AI response.' });
     }
-    // Fall back to returning the whole response for debugging if no text present
-    return res.status(200).json({ text: '', raw: responseData });
+
   } catch (error) {
     console.error('Internal Serverless Function Error:', error);
-    return res.status(500).json({ error: 'An internal server error occurred on the backend.', details: String(error && error.message || error) });
+    return res.status(500).json({ error: 'An internal server error occurred.' });
   }
 };
 
-// Ensure compatibility with different import styles
-exports.default = module.exports;
