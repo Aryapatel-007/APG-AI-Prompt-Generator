@@ -32,8 +32,8 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  // 4. *** MODEL UPGRADE *** Use the correct, valid Gemini Pro model name
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent`;
+  // 4. *** MODEL UPGRADE *** Use the correct, stable Gemini Pro model name
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro-latest:generateContent`;
 
   const payload = {
     contents: [
