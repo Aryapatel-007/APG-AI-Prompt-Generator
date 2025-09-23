@@ -1,4 +1,4 @@
-// api/generate.js - Final version using the current Llama 3 model
+// api/generate.js - Final version using the Mixtral model for stability
 
 module.exports = async (req, res) => {
   // Set CORS headers
@@ -29,8 +29,8 @@ module.exports = async (req, res) => {
   }
 
   const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-  // *** THE FINAL FIX *** Using the currently supported and more powerful Llama 3 model
-  const MODEL_NAME = 'llama3-70b-8192'; 
+  // *** MODEL UPDATE FOR STABILITY *** Switching to the widely supported Mixtral model.
+  const MODEL_NAME = 'mixtral-8x7b-32768'; 
 
   const payload = {
     model: MODEL_NAME,
@@ -55,7 +55,8 @@ module.exports = async (req, res) => {
     if (!groqResponse.ok) {
       console.error('Groq API Error:', responseData);
       const message = responseData?.error?.message || 'An unknown error occurred with the Groq API.';
-      return res.status(groqResponse.status).json({ error: message, upstream: responseData });
+      // Send a detailed error back to the frontend
+      return res.status(groqResponse.status).json({ error: `Groq API Error: ${message}`, upstream: responseData });
     }
 
     const text = responseData?.choices?.[0]?.message?.content;
