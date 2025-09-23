@@ -1,4 +1,4 @@
-// api/generate.js - Final corrected version for Vercel build compatibility
+// api/generate.js - Final version using the Gemini Pro model
 
 // Use the standard async arrow function export pattern
 module.exports = async (req, res) => {
@@ -32,8 +32,8 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  // 4. Use the correct, valid Gemini model name
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`;
+  // 4. *** MODEL UPGRADE *** Use the correct, valid Gemini Pro model name
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent`;
 
   const payload = {
     contents: [
