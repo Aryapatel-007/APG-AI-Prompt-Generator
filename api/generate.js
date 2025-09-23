@@ -1,6 +1,5 @@
-// api/generate.js - Using the incredibly fast Groq API with Llama 3
+// api/generate.js - Final version using the current Llama 3 model
 
-// Use the standard async arrow function export pattern
 module.exports = async (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,8 +15,6 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
-  
-  // This is a new comment to force a fresh Vercel build.
 
   const { prompt, systemInstruction } = req.body || {};
   if (!prompt) {
@@ -32,7 +29,8 @@ module.exports = async (req, res) => {
   }
 
   const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-  const MODEL_NAME = 'llama3-8b-8192'; // Meta's Llama 3 running at light speed
+  // *** MODEL UPDATE *** Using the currently supported and more powerful Llama 3 model
+  const MODEL_NAME = 'llama3-70b-8192'; 
 
   // Groq uses the same payload structure as OpenAI's Chat Completions API
   const payload = {
