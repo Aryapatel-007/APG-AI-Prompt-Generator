@@ -1,12 +1,13 @@
-// Vercel Serverless Function (Node.js) - Corrected for compatibility
-// This securely handles requests from the frontend using a server-side API key.
+// api/generate.js - Final corrected version for Vercel build compatibility
 
-module.exports = async function handler(req, res) {
-  // Handle CORS preflight requests for development and cross-domain access
+// Use the standard async arrow function export pattern
+module.exports = async (req, res) => {
+  // Set CORS headers to allow requests from any origin
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+  // Handle the browser's preflight OPTIONS request
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
@@ -31,7 +32,7 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  // 4. FINAL FIX: Use a valid model name AND remove the key from the URL.
+  // 4. Use the correct, valid Gemini model name
   const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`;
 
   const payload = {
@@ -48,12 +49,12 @@ module.exports = async function handler(req, res) {
   };
 
   try {
-    // 5. FINAL FIX: Add the API key to the request headers.
+    // 5. Make the fetch call with the API key in the headers
     const geminiResponse = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': GEMINI_API_KEY, // The key now goes here
+        'x-goog-api-key': GEMINI_API_KEY, // The key goes here
       },
       body: JSON.stringify(payload),
     });
@@ -72,7 +73,6 @@ module.exports = async function handler(req, res) {
     if (typeof text === 'string') {
       return res.status(200).json({ text });
     } else {
-      // This is a fallback in case the response structure is unexpected
       console.error('Could not extract text from Gemini response:', responseData);
       return res.status(500).json({ error: 'Could not extract text from the AI response.' });
     }
