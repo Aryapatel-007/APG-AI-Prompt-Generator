@@ -29,10 +29,9 @@ module.exports = async (req, res) => {
   }
 
   const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-  // *** MODEL UPDATE *** Using the currently supported and more powerful Llama 3 model
+  // *** THE FINAL FIX *** Using the currently supported and more powerful Llama 3 model
   const MODEL_NAME = 'llama3-70b-8192'; 
 
-  // Groq uses the same payload structure as OpenAI's Chat Completions API
   const payload = {
     model: MODEL_NAME,
     messages: [
@@ -46,7 +45,6 @@ module.exports = async (req, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Groq uses a Bearer token for authorization
         'Authorization': `Bearer ${GROQ_API_KEY}` 
       },
       body: JSON.stringify(payload),
@@ -60,7 +58,6 @@ module.exports = async (req, res) => {
       return res.status(groqResponse.status).json({ error: message, upstream: responseData });
     }
 
-    // Safely extract the generated text from the successful response
     const text = responseData?.choices?.[0]?.message?.content;
     if (typeof text === 'string') {
       return res.status(200).json({ text });
