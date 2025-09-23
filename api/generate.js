@@ -31,8 +31,8 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  // 4. Use a valid and current Gemini model name
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+  // 4. FINAL FIX: Use a valid model name AND remove the key from the URL.
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`;
 
   const payload = {
     contents: [
@@ -48,11 +48,12 @@ module.exports = async function handler(req, res) {
   };
 
   try {
-    // 5. Make the fetch call to the official Gemini API
+    // 5. FINAL FIX: Add the API key to the request headers.
     const geminiResponse = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-goog-api-key': GEMINI_API_KEY, // The key now goes here
       },
       body: JSON.stringify(payload),
     });
