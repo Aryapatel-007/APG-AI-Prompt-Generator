@@ -1,5 +1,6 @@
 // api/generate.js - Using the incredibly fast Groq API with Llama 3
 
+// Use the standard async arrow function export pattern
 module.exports = async (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,6 +16,8 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
+  
+  // This is a new comment to force a fresh Vercel build.
 
   const { prompt, systemInstruction } = req.body || {};
   if (!prompt) {
