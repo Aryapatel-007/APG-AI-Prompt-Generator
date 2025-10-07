@@ -1,11 +1,10 @@
-// api/generate.js - Final version using the Anthropic Claude 3 Haiku model
+// api/generate.js - Final version using the Google Gemini API
 
 module.exports = async (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  // Add 'x-api-key' to allowed headers for Claude
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
@@ -22,51 +21,52 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'A prompt is required.' });
   }
 
-  // IMPORTANT: The environment variable must be named ANTHROPIC_API_KEY in Vercel
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-  if (!ANTHROPIC_API_KEY) {
-    console.error('ANTHROPIC_API_KEY is not set in environment variables.');
+  // IMPORTANT: The environment variable MUST be named GEMINI_API_KEY
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  if (!GEMINI_API_KEY) {
+    console.error('GEMINI_API_KEY is not set in environment variables.');
     return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  const API_URL = 'https://api.anthropic.com/v1/messages';
-  const MODEL_NAME = 'claude-3-haiku-20240307'; // Fast, reliable, and high-quality
+  // Using the stable and compatible Gemini 1.5 Flash model
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`;
 
-  // The payload structure for Claude is different from Groq/OpenAI
   const payload = {
-    model: MODEL_NAME,
-    max_tokens: 2048, // You can adjust this value as needed
-    system: systemInstruction, // Claude has a dedicated top-level 'system' parameter
-    messages: [
-      { role: 'user', content: prompt }
-    ]
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: prompt }],
+      },
+    ],
+    // Conditionally add system instructions if they exist
+    ...(systemInstruction
+      ? { systemInstruction: { parts: [{ text: systemInstruction }] } }
+      : {}),
   };
 
   try {
-    const claudeResponse = await fetch(API_URL, {
+    const geminiResponse = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,      // Claude's specific API key header
-        'anthropic-version': '2023-06-01' // Required by the Claude API
+        'x-goog-api-key': GEMINI_API_KEY, // The key goes in the header
       },
       body: JSON.stringify(payload),
     });
 
-    const responseData = await claudeResponse.json();
+    const responseData = await geminiResponse.json();
 
-    if (!claudeResponse.ok) {
-      console.error('Claude API Error:', responseData);
-      const message = responseData?.error?.message || 'An unknown error occurred with the Claude API.';
-      return res.status(claudeResponse.status).json({ error: message, upstream: responseData });
+    if (!geminiResponse.ok) {
+      console.error('Gemini API Error:', responseData);
+      const message = responseData?.error?.message || 'An unknown error occurred with the Gemini API.';
+      return res.status(geminiResponse.status).json({ error: message, upstream: responseData });
     }
 
-    // The response structure for Claude is also slightly different
-    const text = responseData?.content?.[0]?.text;
+    const text = responseData?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (typeof text === 'string') {
       return res.status(200).json({ text });
     } else {
-      console.error('Could not extract text from Claude response:', responseData);
+      console.error('Could not extract text from Gemini response:', responseData);
       return res.status(500).json({ error: 'Could not extract text from the AI response.' });
     }
 
