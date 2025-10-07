@@ -28,8 +28,8 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  // *** Using the Gemini 1.5 Flash model as requested ***
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`;
+  // *** Using the stable Gemini 1.0 Pro model as requested ***
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent`;
 
   const payload = {
     contents: [
