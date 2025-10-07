@@ -1,4 +1,4 @@
-// api/generate.js - Final version using the stable Google Gemini 1.0 Pro model
+// api/generate.js - Final version using the Google Gemini 1.5 Flash model
 
 module.exports = async (req, res) => {
   // Set CORS headers
@@ -28,8 +28,8 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  // *** Using the stable Gemini 1.0 Pro model as requested ***
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent`;
+  // *** Using the Gemini 1.5 Flash model as requested ***
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`;
 
   const payload = {
     contents: [
