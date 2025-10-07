@@ -1,4 +1,4 @@
-// api/generate.js - Final version using the Google Gemini API
+// api/generate.js - Final version using the stable Google Gemini Pro model
 
 module.exports = async (req, res) => {
   // Set CORS headers
@@ -21,15 +21,15 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'A prompt is required.' });
   }
 
-  // IMPORTANT: The environment variable MUST be named GEMINI_API_KEY
+  // IMPORTANT: The environment variable must be named GEMINI_API_KEY
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_API_KEY) {
     console.error('GEMINI_API_KEY is not set in environment variables.');
     return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  // Using the stable and compatible Gemini 1.5 Flash model
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`;
+  // *** THE FINAL FIX *** Using the universally compatible Gemini Pro model
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent`;
 
   const payload = {
     contents: [
