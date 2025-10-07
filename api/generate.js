@@ -1,4 +1,4 @@
-// api/generate.js - Final version using the stable Google Gemini Pro model
+// api/generate.js - Final version using the stable Google Gemini 1.0 Pro model
 
 module.exports = async (req, res) => {
   // Set CORS headers
@@ -28,8 +28,8 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  // *** THE FINAL FIX *** Using the universally compatible Gemini Pro model
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent`;
+  // *** THE FINAL FIX *** Using the universally compatible Gemini 1.0 Pro model
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent`;
 
   const payload = {
     contents: [
@@ -70,7 +70,8 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: 'Could not extract text from the AI response.' });
     }
 
-  } catch (error) {
+  } catch (error)
+ {
     console.error('Internal Serverless Function Error:', error);
     return res.status(500).json({ error: 'An internal server error occurred.' });
   }
