@@ -70,8 +70,7 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: 'Could not extract text from the AI response.' });
     }
 
-  } catch (error)
- {
+  } catch (error) {
     console.error('Internal Serverless Function Error:', error);
     return res.status(500).json({ error: 'An internal server error occurred.' });
   }
