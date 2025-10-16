@@ -1,4 +1,4 @@
-// api/generate.js - Final version using the Google Gemini 1.5 Flash model
+// api/generate.js - Final version using the Mistral AI API
 
 module.exports = async (req, res) => {
   // Set CORS headers
@@ -21,52 +21,50 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'A prompt is required.' });
   }
 
-  // IMPORTANT: The environment variable must be named GEMINI_API_KEY
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  if (!GEMINI_API_KEY) {
-    console.error('GEMINI_API_KEY is not set in environment variables.');
+  // IMPORTANT: The environment variable must be named MISTRAL_API_KEY in Vercel
+  const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
+  if (!MISTRAL_API_KEY) {
+    console.error('MISTRAL_API_KEY is not set in environment variables.');
     return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  // *** Using the Gemini 1.5 Flash model as requested ***
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`;
+  const API_URL = 'https://api.mistral.ai/v1/chat/completions';
+  const MODEL_NAME = 'open-mistral-7b'; // This corresponds to Mistral-7B-Instruct-v0.2
 
+  // Mistral uses a payload structure similar to OpenAI's
   const payload = {
-    contents: [
-      {
-        role: 'user',
-        parts: [{ text: prompt }],
-      },
-    ],
-    // Conditionally add system instructions if they exist
-    ...(systemInstruction
-      ? { systemInstruction: { parts: [{ text: systemInstruction }] } }
-      : {}),
+    model: MODEL_NAME,
+    messages: [
+      { role: 'system', content: systemInstruction || "You are a helpful assistant." },
+      { role: 'user', content: prompt }
+    ]
   };
 
   try {
-    const geminiResponse = await fetch(API_URL, {
+    const mistralResponse = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': GEMINI_API_KEY, // The key goes in the header
+        // Mistral uses a Bearer token for authorization
+        'Authorization': `Bearer ${MISTRAL_API_KEY}` 
       },
       body: JSON.stringify(payload),
     });
 
-    const responseData = await geminiResponse.json();
+    const responseData = await mistralResponse.json();
 
-    if (!geminiResponse.ok) {
-      console.error('Gemini API Error:', responseData);
-      const message = responseData?.error?.message || 'An unknown error occurred with the Gemini API.';
-      return res.status(geminiResponse.status).json({ error: message, upstream: responseData });
+    if (!mistralResponse.ok) {
+      console.error('Mistral API Error:', responseData);
+      const message = responseData?.message || 'An unknown error occurred with the Mistral API.';
+      return res.status(mistralResponse.status).json({ error: message, upstream: responseData });
     }
 
-    const text = responseData?.candidates?.[0]?.content?.parts?.[0]?.text;
+    // Safely extract the generated text from the successful response
+    const text = responseData?.choices?.[0]?.message?.content;
     if (typeof text === 'string') {
       return res.status(200).json({ text });
     } else {
-      console.error('Could not extract text from Gemini response:', responseData);
+      console.error('Could not extract text from Mistral response:', responseData);
       return res.status(500).json({ error: 'Could not extract text from the AI response.' });
     }
 
