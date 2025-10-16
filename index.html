@@ -160,14 +160,9 @@
 
         let currentStep = 0;
         let userTopic = '';
-        // No auth required on client; backend uses server-side key
-
+        
         async function callApi(prompt, systemInstruction) {
-            // No client auth required
-
-            // This now points to our own backend endpoint
             const API_URL = `/api/generate`; 
-            
             const payload = { prompt, systemInstruction };
 
             try {
@@ -232,7 +227,7 @@
             dom.step2Btn.disabled = true;
             dom.step2Btn.innerHTML = `
                 <div class="flex items-center justify-center gap-2">
-                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w-w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -245,8 +240,17 @@
                 return `- ${label}\n  - ${answer}`;
             }).join('\n');
 
-            const finalPromptInstruction = `
-Based on the user's initial goal and their answers to the refining questions, create a final, comprehensive, and well-structured prompt. The prompt should be ready to be copied and pasted into any AI model. Do not include any preamble or explanation, just the final prompt itself.
+            // *** THE FINAL FIX IS HERE ***
+            // This instruction is now much stricter and more explicit.
+            const finalPromptInstruction = `Your role is an expert prompt engineer. Your ONLY task is to take the user's initial goal and their answers to refining questions, and rewrite them into a single, final, comprehensive prompt.
+
+You MUST NOT answer the user's request yourself. You are to generate the prompt text only.
+
+For example, if the user's goal was "write a story about a dragon," your output should be a detailed prompt like "Write a short story in the fantasy genre about a young, misunderstood dragon who..." and NOT the story itself.
+
+The final output must ONLY be the generated prompt, with no extra conversation, preamble, or explanations.
+
+Here is the user's information:
 
 **User's Initial Goal:**
 ${userTopic}
@@ -254,10 +258,9 @@ ${userTopic}
 **User's Refinements:**
 ${questionsAndAnswers}
 
-Generate the final prompt below.
-`;
+Now, generate the final, copy-and-paste-ready prompt below.`;
             
-            const refinedPrompt = await callApi(finalPromptInstruction);
+            const refinedPrompt = await callApi(finalPromptInstruction, "You are a world-class prompt engineer who rewrites simple user goals into detailed, expert-level prompts for other AI models.");
 
             if (!refinedPrompt || refinedPrompt.startsWith("Error:")) {
                  dom.resultText.textContent = refinedPrompt || 'Failed to generate prompt.';
@@ -270,8 +273,6 @@ Generate the final prompt below.
             dom.step2Btn.disabled = false;
             dom.step2Btn.textContent = 'Generate Prompt';
         };
-        
-        // No auth view anymore
 
         const resetToStart = () => {
             currentStep = 0;
@@ -281,8 +282,6 @@ Generate the final prompt below.
             dom.step1Btn.disabled = true;
             updateStepUI();
         };
-
-        // Removed OAuth logic entirely
 
         dom.topicInput.addEventListener('input', () => {
             dom.step1Btn.disabled = dom.topicInput.value.trim() === '';
@@ -309,12 +308,9 @@ Generate the final prompt below.
             });
         });
 
-        // No token restore needed
-
         updateStepUI();
         dom.step1Btn.disabled = true;
 
     </script>
 </body>
 </html>
-
