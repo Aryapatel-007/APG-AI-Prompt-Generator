@@ -2,9 +2,8 @@
   "name": "apg-ai-prompt-generator",
   "version": "1.0.0",
   "private": true,
-  "description": "A 3-step AI prompt generator using Vercel and the Gemini API.",
+  "description": "A 3-step AI prompt generator using Vercel and the Mistral API.",
   "scripts": {
     "build": "echo 'No build step required, but this triggers Vercel function detection.'"
   }
 }
-
