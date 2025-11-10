@@ -1,4 +1,4 @@
-// api/health.js - Final version for Mistral API
+// api/health.js - Final version for Anthropic Claude API
 
 module.exports = (req, res) => {
   // Set CORS headers
@@ -16,14 +16,14 @@ module.exports = (req, res) => {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  // Check if the correct environment variable for Mistral is present
-  const hasKey = Boolean(process.env.MISTRAL_API_KEY);
+  // Check if the correct environment variable for Claude is present
+  const hasKey = Boolean(process.env.CLAUDE_API_KEY);
 
   // Return a success status with the check result
   return res.status(200).json({ 
     ok: true, 
     env: { 
-      MISTRAL_API_KEY: hasKey ? 'present' : 'missing' 
+      CLAUDE_API_KEY: hasKey ? 'present' : 'missing' 
     } 
   });
 };
