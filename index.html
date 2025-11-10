@@ -161,7 +161,7 @@
     </div>
     
     <script>
-        // --- START OF MODIFIED SCRIPT ---
+        // --- START OF SCRIPT ---
         const dom = {
             stepIndicators: [document.getElementById('step-1-indicator'), document.getElementById('step-2-indicator'), document.getElementById('step-3-indicator')],
             stepContents: [document.getElementById('step-1-content'), document.getElementById('step-2-content'), document.getElementById('step-3-content')],
@@ -183,12 +183,13 @@
         let state = {
             currentStep: 0,
             userTopic: '',
-            questionsAndAnswers: [], // This will be built from the form
+            questionsAndAnswers: [], 
             manualInput: '',
-            generatedPrompt: ''
+            generatedPrompt: '',
+            fileContent: '' // To store text file content
         };
 
-        // --- API Call Logic (Unchanged) ---
+        // --- API Call Logic ---
         async function callApi(prompt, systemInstruction) {
             const API_URL = `/api/generate`; 
             const payload = { prompt, systemInstruction };
@@ -211,7 +212,7 @@
             }
         }
 
-        // --- UI Update Logic (Unchanged) ---
+        // --- UI Update Logic ---
         const updateStepUI = () => {
             dom.stepIndicators.forEach((indicator, index) => indicator.classList.toggle('active', index === state.currentStep));
             dom.stepContents.forEach((content, index) => content.classList.toggle('hidden', index !== state.currentStep));
@@ -225,26 +226,26 @@
             container.innerHTML = `<div class="text-center text-red-400 p-4 bg-red-900/20 rounded-lg">${message}</div>`;
         };
         
-        // --- Step 2: Question Logic (MODIFIED) ---
-
-        /**
-         * Loads the initial 5 questions as a form.
-         */
+        // --- Step 2: Question Logic ---
         const loadInitialQuestions = async () => {
             state.currentStep = 1;
             updateStepUI();
             dom.refineOptions.classList.add('hidden');
             showLoading(dom.questionsContainer, 'APG is preparing your refinement form...');
             
-            const instruction = `You are an expert prompt engineering assistant. Your goal is to help a user refine their initial goal.
+            // --- MODIFIED INSTRUCTION FOR CLAUDE ---
+            const instruction = `You are an expert JSON-generating assistant. Your sole task is to generate a JSON array of strings based on the user's goal.
 User's Initial Goal: "${state.userTopic}"
 **Your Task:** Generate 5 insightful, clarifying questions to ask the user. The questions should cover different aspects like Audience, Format, Tone, Key Details, and Constraints.
-**Return ONLY a JSON array of 5 strings**, like: ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]`;
+**CRITICAL:** You MUST respond with *only* the raw JSON array. Do not include *any* other text, conversation, or markdown (like \`\`\`json).
+Your entire response must be in the format: ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]`;
+            // --- END MODIFICATION ---
 
             const questionText = await callApi("Generate 5 initial questions.", instruction);
 
             let questions;
             try {
+                // Try to parse the response as JSON
                 questions = JSON.parse(questionText);
                 if (!Array.isArray(questions) || questions.length === 0 || !questions.every(q => typeof q === 'string')) {
                     throw new Error('Invalid JSON array format.');
@@ -256,12 +257,10 @@ User's Initial Goal: "${state.userTopic}"
             }
 
             dom.step2Title.textContent = 'Refine your prompt.';
-            dom.questionsContainer.innerHTML = ''; // Clear loading message
+            dom.questionsContainer.innerHTML = ''; 
             
-            // Create the form
             questions.forEach((q, index) => {
                 const questionEl = document.createElement('div');
-                // --- NEW HTML STRUCTURE FOR FOLLOW-UPS & MANUAL INPUT ---
                 questionEl.className = 'question-item space-y-2 mb-4';
                 questionEl.innerHTML = `
                     <label for="q-${index}" class="block text-lg font-medium text-left">${q}</label>
@@ -277,7 +276,6 @@ User's Initial Goal: "${state.userTopic}"
                     <div class="manual-input-container-specific ml-4 mt-2"></div>
                     <div class="follow-up-container ml-4 border-l-2 border-border-color pl-4 mt-2"></div>
                 `;
-                // --- END NEW HTML STRUCTURE ---
                 dom.questionsContainer.appendChild(questionEl);
             });
 
@@ -285,9 +283,6 @@ User's Initial Goal: "${state.userTopic}"
             dom.addInputBtn.style.display = 'inline-block'; 
         };
 
-        /**
-         * Asks for 3 more questions and appends them to the form.
-         */
         const askMoreQuestions = async () => {
             dom.refineOptions.classList.add('hidden');
             
@@ -301,15 +296,18 @@ User's Initial Goal: "${state.userTopic}"
             
             const previousQAs = state.questionsAndAnswers.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
 
-            const instruction = `You are an expert prompt assistant. A user is refining a goal.
+            // --- MODIFIED INSTRUCTION FOR CLAUDE ---
+            const instruction = `You are an expert JSON-generating assistant. Your sole task is to generate a JSON array of strings based on the user's goal and history.
 User's Goal: "${state.userTopic}"
 Previously asked questions and answers:
 ${previousQAs || 'None yet.'}
 **Your Task:** Ask 3 *new*, *different* questions that haven't been covered.
-**Return ONLY a JSON array of 3 strings**, like: ["New Q1", "New Q2", "New Q3"]`;
+**CRITICAL:** You MUST respond with *only* the raw JSON array. Do not include *any* other text, conversation, or markdown.
+Your entire response must be in the format: ["New Q1", "New Q2", "New Q3"]`;
+            // --- END MODIFICATION ---
 
             const questionText = await callApi("Generate 3 more questions.", instruction);
-            document.getElementById('more-questions-loading').remove(); // Remove loading message
+            document.getElementById('more-questions-loading').remove(); 
 
             let newQuestions;
             try {
@@ -324,12 +322,10 @@ ${previousQAs || 'None yet.'}
                 return;
             }
 
-            // Append new questions to the form
             const baseIndex = dom.questionsContainer.querySelectorAll('.question-item').length;
             newQuestions.forEach((q, index) => {
                 const newIndex = baseIndex + index;
                 const questionEl = document.createElement('div');
-                // --- ADDING NEW QUESTIONS WITH FULL CAPABILITIES ---
                 questionEl.className = 'question-item space-y-2 mb-4';
                 questionEl.innerHTML = `
                     <label for="q-${newIndex}" class="block text-lg font-medium text-left">${q}</label>
@@ -345,20 +341,14 @@ ${previousQAs || 'None yet.'}
                     <div class="manual-input-container-specific ml-4 mt-2"></div>
                     <div class="follow-up-container ml-4 border-l-2 border-border-color pl-4 mt-2"></div>
                 `;
-                // --- END NEW STRUCTURE ---
                 dom.questionsContainer.appendChild(questionEl);
             });
             
             dom.refineOptions.classList.remove('hidden');
         };
 
-        /**
-         * Helper function to read all Q&As from the DOM inputs and update the state.
-         */
         const buildStateFromForm = () => {
             state.questionsAndAnswers = [];
-            // --- MODIFIED SELECTOR ---
-            // Select all inputs AND textareas that have a data-question attribute
             const inputs = dom.questionsContainer.querySelectorAll('input[type="text"][data-question], textarea[data-question]');
             
             inputs.forEach(input => {
@@ -368,43 +358,35 @@ ${previousQAs || 'None yet.'}
                 });
             });
 
-            // Also get *general* manual input
             const manualInput = document.getElementById('manual-input');
             state.manualInput = manualInput ? manualInput.value.trim() : '';
         };
 
-        // --- NEW FUNCTION: Handles clicking the "Add manual input" button for a specific question ---
         const handleSpecificManualInputClick = (event) => {
             if (!event.target.classList.contains('manual-input-btn-specific')) {
-                return; // Exit if not the correct button
+                return; 
             }
 
             const btn = event.target;
             btn.disabled = true;
 
             const qIndex = btn.dataset.qIndex;
-            const mainInput = document.getElementById(`q-${qIndex}`); // Get the main input
-            const mainQuestionText = mainInput.dataset.question; // Get its question text
+            const mainInput = document.getElementById(`q-${qIndex}`);
+            const mainQuestionText = mainInput.dataset.question; 
             
-            // Find the container specific to this question item
             const manualInputContainer = btn.closest('.question-item').querySelector('.manual-input-container-specific');
-            
             const inputId = `q-${qIndex}-manual`;
 
-            // Add the textarea
             manualInputContainer.innerHTML = `
                 <label for="${inputId}" class="block text-lg font-medium text-left text-text-secondary">Additional details for this question:</label>
                 <textarea id="${inputId}" data-question="(Manual Details for: ${mainQuestionText})" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200 mt-2" rows="3" placeholder="Add your specific details here..."></textarea>
             `;
-            
-            // Remove the button
             btn.remove();
         };
 
-        // --- Handles clicking the "Add follow-up" button (Unchanged) ---
         const handleFollowUpClick = async (event) => {
             if (!event.target.classList.contains('follow-up-btn')) {
-                return; // Exit if the click wasn't on a follow-up button
+                return;
             }
 
             const btn = event.target;
@@ -431,35 +413,42 @@ Return ONLY the text of the single follow-up question.`;
                     <label for="${followUpId}" class="block text-lg font-medium text-left text-text-secondary">${followUpQuestionText}</label>
                     <input type="text" id="${followUpId}" data-question="${followUpQuestionText}" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200 mt-2" placeholder="Your answer...">
                 `;
-                btn.remove(); // Remove the "Add follow-up" button after it's used
+                btn.remove();
             } else {
                 console.error("Failed to get follow-up:", followUpQuestionText);
-                btn.textContent = 'Add follow-up'; // Reset on error
+                btn.textContent = 'Add follow-up'; 
                 btn.disabled = false;
                 followUpContainer.innerHTML = `<span class="text-red-400 text-sm">Could not load question. Try again.</span>`;
                 setTimeout(() => { followUpContainer.innerHTML = ''; }, 3000);
             }
         };
 
-        // --- Step 3: Prompt Generation Logic (Unchanged) ---
-        // This function works as-is because buildStateFromForm() now collects all inputs
+        // --- Step 3: Prompt Generation Logic ---
         const generatePrompt = async () => {
-            state.currentStep = 2; // Keep UI on refine step while loading
+            state.currentStep = 2; 
             updateStepUI();
             showLoading(dom.questionsContainer, 'Generating your final prompt...');
             dom.refineOptions.classList.add('hidden');
             
-            buildStateFromForm(); // Collects all data from inputs and textareas
+            buildStateFromForm(); 
 
             const qasText = state.questionsAndAnswers.map(qa => `- Question: ${qa.question}\n- Answer: ${qa.answer}`).join('\n');
-            // state.manualInput is from the *general* button at the bottom
             const manualInputSection = state.manualInput ? `\n**Additional User-Provided Details:**\n${state.manualInput}` : '';
 
+            // Add file content to the instruction
+            const fileContentSection = state.fileContent 
+                ? `\n**User-Provided File Content:**\n---\n${state.fileContent}\n---`
+                : '';
+
+            // Add fileContentSection to the instruction
             const instruction = `Your role is an expert prompt engineer. Your ONLY task is to synthesize the user's goal and their answers into a single, comprehensive, and detailed prompt ready for another AI model.
 You MUST NOT answer or fulfill the user's request yourself. You are building the prompt FOR them.
 The final output must ONLY be the generated prompt text, with no extra conversation, preamble, or explanations like "Here is your prompt:".
+
 **User's Initial Goal:**
 ${state.userTopic}
+${fileContentSection}
+
 **User's Refinements (Questions & Answers):**
 ${qasText}
 ${manualInputSection}
@@ -467,7 +456,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
             const finalPrompt = await callApi("Synthesize the information into a final prompt.", instruction);
             
-            if (!finalPrompt || finalPrompt.startsWith("Error:")) {
+            if (!finalPrompt || finalProlog.startsWith("Error:")) {
                 showError(dom.questionsContainer, finalPrompt);
                 dom.refineOptions.classList.remove('hidden');
             } else {
@@ -478,7 +467,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             }
         };
 
-        // --- Toolbar JS (Unchanged) ---
+        // --- Toolbar JS (File/Image Upload) ---
         const toggleButton = document.getElementById('toggleBtn');
         const optionsMenu = document.getElementById('optionsMenu');
         toggleButton.addEventListener('click', (event) => {
@@ -493,26 +482,60 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
         optionsMenu.addEventListener('click', (event) => {
             event.stopPropagation();
         });
+
         const photoUpload = document.getElementById('photoUpload');
         const fileUpload = document.getElementById('fileUpload');
+
+        // Handle photo upload
         photoUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
                 console.log('Photo selected:', file.name);
                 optionsMenu.classList.remove('visible');
+                alert("Note: The current AI backend is configured for text-only. It cannot process images yet.");
             }
         });
+
+        // Handle text file upload
         fileUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
                 console.log('File selected:', file.name);
                 optionsMenu.classList.remove('visible');
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        state.fileContent = e.target.result;
+                        console.log("File content loaded into state.");
+                        alert(`File "${file.name}" has been loaded and will be included as context.`);
+                    } catch (err) {
+                        console.error("Error reading file:", err);
+                        alert("Error: Could not read the file.");
+                        state.fileContent = '';
+                    }
+                };
+                reader.onerror = () => {
+                    console.error("FileReader error");
+                    alert("Error: Failed to read file.");
+                    state.fileContent = '';
+                };
+                
+                reader.readAsText(file);
             }
         });
         
-        // --- Event Listeners & Initialization (MODIFIED) ---
+        // --- Event Listeners & Initialization ---
         const resetToStart = () => {
-            state = { currentStep: 0, userTopic: '', questionsAndAnswers: [], manualInput: '', generatedPrompt: '' };
+            state = { 
+                currentStep: 0, 
+                userTopic: '', 
+                questionsAndAnswers: [], 
+                manualInput: '', 
+                generatedPrompt: '',
+                fileContent: '' 
+            };
+
             dom.topicInput.value = '';
             dom.questionsContainer.innerHTML = '';
             dom.step1Btn.disabled = true;
@@ -538,8 +561,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
         dom.moreQuestionsBtn.addEventListener('click', askMoreQuestions);
 
-        // This is the handler for the *general* manual input button
-        dom.addInputBtn.addEventListener('click', () => {
+        dom.addInputBtn.addEventListener('click', ()D => {
             dom.addInputBtn.style.display = 'none';
             const inputEl = document.createElement('div');
             inputEl.id = 'manual-input-div';
@@ -566,13 +588,13 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
         dom.startOverBtn.addEventListener('click', resetToStart);
 
-        // --- NEW: Add the delegated event listeners ---
+        // Add the delegated event listeners
         dom.questionsContainer.addEventListener('click', handleFollowUpClick);
         dom.questionsContainer.addEventListener('click', handleSpecificManualInputClick);
 
         // Initial UI setup
         resetToStart();
-        // --- END OF MODIFIED SCRIPT ---
+        // --- END OF SCRIPT ---
     </script>
 </body>
 </html>
