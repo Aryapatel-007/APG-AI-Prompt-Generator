@@ -110,7 +110,12 @@
 
                 <div id="step-1-content">
                     <h3 class="text-2xl font-semibold mb-4">What's your topic or goal?</h3>
-                    <textarea id="topic-input" rows="5" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200" placeholder="e.g., A marketing campaign for a new coffee brand"></textarea>
+                    <div class="relative w-full">
+                        <textarea id="topic-input" rows="5" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200" placeholder="e.g., A marketing campaign for a new coffee brand"></textarea>
+                        <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 10px; top: 10px; width: 36px; height: 36px;" title="Voice Input">
+                            <i class="fa-solid fa-microphone"></i>
+                        </button>
+                    </div>
                     
                     <div class="attachment-toolbar mt-4">
                         <button type="button" id="toggleBtn" class="toolbar-btn" title="Add attachments">
@@ -263,9 +268,15 @@ User's Initial Goal: "${state.userTopic}"
                 const questionEl = document.createElement('div');
                 // --- NEW HTML STRUCTURE FOR FOLLOW-UPS & MANUAL INPUT ---
                 questionEl.className = 'question-item space-y-2 mb-4';
+                // --- MODIFIED: Added relative wrapper, pr-12, and voice button to input ---
                 questionEl.innerHTML = `
                     <label for="q-${index}" class="block text-lg font-medium text-left">${q}</label>
-                    <input type="text" id="q-${index}" data-question="${q}" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200" placeholder="Your answer...">
+                    <div class="relative w-full">
+                        <input type="text" id="q-${index}" data-question="${q}" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200" placeholder="Your answer...">
+                        <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;" title="Voice Input">
+                            <i class="fa-solid fa-microphone"></i>
+                        </button>
+                    </div>
                     <div class="text-right mt-1 space-x-4">
                         <button type="button" class="manual-input-btn-specific text-sm text-pink-400 hover:underline" data-q-index="${index}">
                             Add manual input
@@ -331,9 +342,15 @@ ${previousQAs || 'None yet.'}
                 const questionEl = document.createElement('div');
                 // --- ADDING NEW QUESTIONS WITH FULL CAPABILITIES ---
                 questionEl.className = 'question-item space-y-2 mb-4';
+                // --- MODIFIED: Added relative wrapper, pr-12, and voice button to input ---
                 questionEl.innerHTML = `
                     <label for="q-${newIndex}" class="block text-lg font-medium text-left">${q}</label>
-                    <input type="text" id="q-${newIndex}" data-question="${q}" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200" placeholder="Your answer...">
+                    <div class="relative w-full">
+                        <input type="text" id="q-${newIndex}" data-question="${q}" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200" placeholder="Your answer...">
+                        <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;" title="Voice Input">
+                            <i class="fa-solid fa-microphone"></i>
+                        </button>
+                    </div>
                     <div class="text-right mt-1 space-x-4">
                         <button type="button" class="manual-input-btn-specific text-sm text-pink-400 hover:underline" data-q-index="${newIndex}">
                             Add manual input
@@ -392,9 +409,15 @@ ${previousQAs || 'None yet.'}
             const inputId = `q-${qIndex}-manual`;
 
             // Add the textarea
+            // --- MODIFIED: Added relative wrapper, pr-12, and voice button to textarea ---
             manualInputContainer.innerHTML = `
                 <label for="${inputId}" class="block text-lg font-medium text-left text-text-secondary">Additional details for this question:</label>
-                <textarea id="${inputId}" data-question="(Manual Details for: ${mainQuestionText})" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200 mt-2" rows="3" placeholder="Add your specific details here..."></textarea>
+                <div class="relative w-full">
+                    <textarea id="${inputId}" data-question="(Manual Details for: ${mainQuestionText})" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200 mt-2" rows="3" placeholder="Add your specific details here..."></textarea>
+                    <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 10px; top: 10px; width: 36px; height: 36px;" title="Voice Input">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                </div>
             `;
             
             // Remove the button
@@ -427,9 +450,15 @@ Return ONLY the text of the single follow-up question.`;
 
             if (followUpQuestionText && !followUpQuestionText.startsWith("Error:")) {
                 const followUpId = `q-${qIndex}-followup`;
+                // --- MODIFIED: Added relative wrapper, pr-12, and voice button to input ---
                 followUpContainer.innerHTML = `
                     <label for="${followUpId}" class="block text-lg font-medium text-left text-text-secondary">${followUpQuestionText}</label>
-                    <input type="text" id="${followUpId}" data-question="${followUpQuestionText}" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200 mt-2" placeholder="Your answer...">
+                    <div class="relative w-full">
+                        <input type="text" id="${followUpId}" data-question="${followUpQuestionText}" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200 mt-2" placeholder="Your answer...">
+                        <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;" title="Voice Input">
+                            <i class="fa-solid fa-microphone"></i>
+                        </button>
+                    </div>
                 `;
                 btn.remove(); // Remove the "Add follow-up" button after it's used
             } else {
@@ -509,6 +538,90 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
                 optionsMenu.classList.remove('visible');
             }
         });
+
+        // --- NEW: Voice Input (Speech Recognition) Logic ---
+        
+        // 1. Check for browser support
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+        let currentTargetInput = null; // This will hold the input field we're recording for
+
+        if (recognition) {
+            recognition.continuous = false; // Stop after the first phrase
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            // 2. Handle the result
+            recognition.onresult = (event) => {
+                // Get the transcript from the last result
+                const transcript = event.results[event.results.length - 1][0].transcript.trim();
+                
+                if (currentTargetInput) {
+                    // Append the transcript to the target input
+                    currentTargetInput.value += (currentTargetInput.value.length > 0 ? ' ' : '') + transcript;
+                    
+                    // IMPORTANT: Manually trigger the 'input' event for the Step 1 textarea
+                    // This ensures its 'disabled' state updates correctly
+                    if (currentTargetInput.id === 'topic-input') {
+                        dom.topicInput.dispatchEvent(new Event('input'));
+                    }
+                }
+            };
+
+            // 3. Handle errors
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error", event.error);
+                if (currentTargetInput) {
+                    // Reset the button icon on error
+                    currentTargetInput.closest('.relative').querySelector('.voice-btn i').className = 'fa-solid fa-microphone';
+                }
+            };
+
+            // 4. Reset button when recognition ends
+            recognition.onend = () => {
+                if (currentTargetInput) {
+                    // Reset the button icon when done
+                    currentTargetInput.closest('.relative').querySelector('.voice-btn i').className = 'fa-solid fa-microphone';
+                    currentTargetInput = null; // We are no longer targeting an input
+                }
+            };
+
+            // 5. Create a main click handler function
+            const handleVoiceInputClick = (event) => {
+                // Check if the click (or its parent) is a .voice-btn
+                const voiceBtn = event.target.closest('.voice-btn');
+                if (!voiceBtn) return; // Not a voice button click
+
+                // Find the associated input (textarea or input) within the same wrapper
+                const target = voiceBtn.closest('.relative').querySelector('textarea, input[type="text"]');
+                if (!target) return; // No input found
+
+                if (currentTargetInput) {
+                    // If we are already recording, stop
+                    recognition.stop();
+                } else {
+                    // Otherwise, start a new recording
+                    currentTargetInput = target;
+                    recognition.start();
+                    // Update button icon to show it's listening
+                    voiceBtn.querySelector('i').className = 'fa-solid fa-stop apg-gradient-text';
+                }
+            };
+
+            // 6. Add a single *delegated* listener to the body
+            // This will catch clicks on all current AND future .voice-btn elements
+            document.body.addEventListener('click', handleVoiceInputClick);
+
+        } else {
+            // Speech recognition not supported in this browser
+            console.warn("Speech Recognition not supported by this browser.");
+            // Hide all voice buttons if the API is not available
+            const style = document.createElement('style');
+            style.innerHTML = `.voice-btn { display: none; }`;
+            document.head.appendChild(style);
+        }
+        // --- END OF NEW VOICE LOGIC ---
         
         // --- Event Listeners & Initialization (MODIFIED) ---
         const resetToStart = () => {
@@ -543,9 +656,15 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             dom.addInputBtn.style.display = 'none';
             const inputEl = document.createElement('div');
             inputEl.id = 'manual-input-div';
+            // --- MODIFIED: Added relative wrapper, pr-12, and voice button to textarea ---
             inputEl.innerHTML = `
                 <label for="manual-input" class="block text-sm font-medium mt-4 mb-2 text-left">Add any other details that weren't covered:</label>
-                <textarea id="manual-input" rows="4" class="w-full p-2 rounded-lg border border-border-color"></textarea>
+                <div class="relative w-full">
+                    <textarea id="manual-input" rows="4" class="w-full p-3 pr-12 rounded-lg border border-border-color"></textarea>
+                    <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 10px; top: 10px; width: 36px; height: 36px;" title="Voice Input">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                </div>
             `;
             dom.questionsContainer.appendChild(inputEl);
         });
