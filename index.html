@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display.swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -233,19 +233,16 @@
             dom.refineOptions.classList.add('hidden');
             showLoading(dom.questionsContainer, 'APG is preparing your refinement form...');
             
-            // --- MODIFIED INSTRUCTION FOR CLAUDE ---
             const instruction = `You are an expert JSON-generating assistant. Your sole task is to generate a JSON array of strings based on the user's goal.
 User's Initial Goal: "${state.userTopic}"
 **Your Task:** Generate 5 insightful, clarifying questions to ask the user. The questions should cover different aspects like Audience, Format, Tone, Key Details, and Constraints.
 **CRITICAL:** You MUST respond with *only* the raw JSON array. Do not include *any* other text, conversation, or markdown (like \`\`\`json).
 Your entire response must be in the format: ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]`;
-            // --- END MODIFICATION ---
 
             const questionText = await callApi("Generate 5 initial questions.", instruction);
 
             let questions;
             try {
-                // Try to parse the response as JSON
                 questions = JSON.parse(questionText);
                 if (!Array.isArray(questions) || questions.length === 0 || !questions.every(q => typeof q === 'string')) {
                     throw new Error('Invalid JSON array format.');
@@ -296,7 +293,6 @@ Your entire response must be in the format: ["Question 1", "Question 2", "Questi
             
             const previousQAs = state.questionsAndAnswers.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
 
-            // --- MODIFIED INSTRUCTION FOR CLAUDE ---
             const instruction = `You are an expert JSON-generating assistant. Your sole task is to generate a JSON array of strings based on the user's goal and history.
 User's Goal: "${state.userTopic}"
 Previously asked questions and answers:
@@ -304,7 +300,6 @@ ${previousQAs || 'None yet.'}
 **Your Task:** Ask 3 *new*, *different* questions that haven't been covered.
 **CRITICAL:** You MUST respond with *only* the raw JSON array. Do not include *any* other text, conversation, or markdown.
 Your entire response must be in the format: ["New Q1", "New Q2", "New Q3"]`;
-            // --- END MODIFICATION ---
 
             const questionText = await callApi("Generate 3 more questions.", instruction);
             document.getElementById('more-questions-loading').remove(); 
@@ -456,7 +451,8 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
             const finalPrompt = await callApi("Synthesize the information into a final prompt.", instruction);
             
-            if (!finalPrompt || finalProlog.startsWith("Error:")) {
+            // --- FIX #2: Changed finalProlog to finalPrompt ---
+            if (!finalPrompt || finalPrompt.startsWith("Error:")) {
                 showError(dom.questionsContainer, finalPrompt);
                 dom.refineOptions.classList.remove('hidden');
             } else {
@@ -561,7 +557,8 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
         dom.moreQuestionsBtn.addEventListener('click', askMoreQuestions);
 
-        dom.addInputBtn.addEventListener('click', ()D => {
+        // --- FIX #1: Changed ()D => to () => ---
+        dom.addInputBtn.addEventListener('click', () => {
             dom.addInputBtn.style.display = 'none';
             const inputEl = document.createElement('div');
             inputEl.id = 'manual-input-div';
