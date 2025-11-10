@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APG-AI Prompt Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -161,6 +161,7 @@
     </div>
     
     <script>
+        // --- START OF MODIFIED SCRIPT ---
         const dom = {
             stepIndicators: [document.getElementById('step-1-indicator'), document.getElementById('step-2-indicator'), document.getElementById('step-3-indicator')],
             stepContents: [document.getElementById('step-1-content'), document.getElementById('step-2-content'), document.getElementById('step-3-content')],
@@ -182,13 +183,12 @@
         let state = {
             currentStep: 0,
             userTopic: '',
-            questionsAndAnswers: [],
-            questionCountTarget: 5,
+            questionsAndAnswers: [], // This will be built from the form
             manualInput: '',
             generatedPrompt: ''
         };
 
-        // --- API Call Logic ---
+        // --- API Call Logic (Unchanged) ---
         async function callApi(prompt, systemInstruction) {
             const API_URL = `/api/generate`; 
             const payload = { prompt, systemInstruction };
@@ -211,7 +211,7 @@
             }
         }
 
-        // --- UI Update Logic ---
+        // --- UI Update Logic (Unchanged) ---
         const updateStepUI = () => {
             dom.stepIndicators.forEach((indicator, index) => indicator.classList.toggle('active', index === state.currentStep));
             dom.stepContents.forEach((content, index) => content.classList.toggle('hidden', index !== state.currentStep));
@@ -225,141 +225,276 @@
             container.innerHTML = `<div class="text-center text-red-400 p-4 bg-red-900/20 rounded-lg">${message}</div>`;
         };
         
-        // --- Step 2: Question Logic ---
-        const askNextQuestion = async () => {
+        // --- Step 2: Question Logic (MODIFIED) ---
+
+        /**
+         * Loads the initial 5 questions as a form.
+         */
+        const loadInitialQuestions = async () => {
+            state.currentStep = 1;
+            updateStepUI();
             dom.refineOptions.classList.add('hidden');
-            showLoading(dom.questionsContainer, 'APG is thinking...');
+            showLoading(dom.questionsContainer, 'APG is preparing your refinement form...');
             
-            const previousQAs = state.questionsAndAnswers.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
-            
-            // --- MODIFIED BLOCK ---
-            // This instruction is now designed to ask broader, more varied questions.
-            const instruction = `You are an expert prompt engineering assistant. Your goal is to help a user refine their initial goal by asking a series of clarifying questions that cover many different aspects.
-
+            const instruction = `You are an expert prompt engineering assistant. Your goal is to help a user refine their initial goal.
 User's Initial Goal: "${state.userTopic}"
+**Your Task:** Generate 5 insightful, clarifying questions to ask the user. The questions should cover different aspects like Audience, Format, Tone, Key Details, and Constraints.
+**Return ONLY a JSON array of 5 strings**, like: ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]`;
 
-Previously asked questions and their answers:
-${previousQAs || 'None yet.'}
+            const questionText = await callApi("Generate 5 initial questions.", instruction);
 
-**Your Task:**
-Ask the user ONE new, insightful question to better understand their needs.
-
-**CRITICAL RULE:** Do NOT just ask a follow-up to the *previous* question. You MUST pick a new, different angle or aspect of the user's goal that has not been covered by the previous questions.
-
-Consider asking about aspects like:
-- **Audience:** Who is the target audience? (e.g., "Who is this marketing campaign for?")
-- **Format:** What should the final output look like? (e.g., "Should this be a bulleted list, a professional email, or a script for a video?")
-- **Tone:** What is the desired tone or style? (e.g., "Should the tone be formal, casual, enthusiastic, or persuasive?")
-- **Key Details:** What specific information, names, or data must be included? (e.g., "What is the name of the new coffee brand?")
-- **Constraints:** What should be avoided? (e.g., "Are there any topics, words, or competitors we should not mention?")
-- **Scope:** How detailed should the response be? (e.g., "Are you looking for a high-level plan or a fully detailed campaign schedule?")
-
-Based on the conversation history, pick a new aspect and ask a single question.
-Return ONLY the text of the single question, with no preamble, numbering, or explanation.`;
-            // --- END MODIFIED BLOCK ---
-
-            const questionText = await callApi("Generate the next question.", instruction);
-
-            if (!questionText || questionText.startsWith("Error:")) {
-                showError(dom.questionsContainer, questionText);
+            let questions;
+            try {
+                questions = JSON.parse(questionText);
+                if (!Array.isArray(questions) || questions.length === 0 || !questions.every(q => typeof q === 'string')) {
+                    throw new Error('Invalid JSON array format.');
+                }
+            } catch (error) {
+                console.error("Failed to parse questions:", error, questionText);
+                showError(dom.questionsContainer, "Error: Could not generate questions. The AI returned an invalid format. Please try again.");
                 return;
             }
 
-            dom.step2Title.textContent = `Refine your prompt (${state.questionsAndAnswers.length + 1}/${state.questionCountTarget})`;
-            dom.questionsContainer.innerHTML = `
-                <div class="space-y-3">
-                    <label for="current-q" class="block text-lg font-medium text-left">${questionText}</label>
-                    <input type="text" id="current-q" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200" placeholder="Your answer...">
-                    <div class="text-right">
-                        <button id="next-q-btn" class="glow-button text-white font-semibold px-6 py-2 rounded-full mt-2" disabled>Next</button>
+            dom.step2Title.textContent = 'Refine your prompt.';
+            dom.questionsContainer.innerHTML = ''; // Clear loading message
+            
+            // Create the form
+            questions.forEach((q, index) => {
+                const questionEl = document.createElement('div');
+                // --- NEW HTML STRUCTURE FOR FOLLOW-UPS & MANUAL INPUT ---
+                questionEl.className = 'question-item space-y-2 mb-4';
+                questionEl.innerHTML = `
+                    <label for="q-${index}" class="block text-lg font-medium text-left">${q}</label>
+                    <input type="text" id="q-${index}" data-question="${q}" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200" placeholder="Your answer...">
+                    <div class="text-right mt-1 space-x-4">
+                        <button type="button" class="manual-input-btn-specific text-sm text-pink-400 hover:underline" data-q-index="${index}">
+                            Add manual input
+                        </button>
+                        <button type="button" class="follow-up-btn text-sm text-primary-glow hover:underline" data-q-index="${index}">
+                            Add follow-up
+                        </button>
                     </div>
-                </div>
-            `;
+                    <div class="manual-input-container-specific ml-4 mt-2"></div>
+                    <div class="follow-up-container ml-4 border-l-2 border-border-color pl-4 mt-2"></div>
+                `;
+                // --- END NEW HTML STRUCTURE ---
+                dom.questionsContainer.appendChild(questionEl);
+            });
 
-            const input = document.getElementById('current-q');
-            const nextBtn = document.getElementById('next-q-btn');
-
-            input.focus();
-            input.addEventListener('input', () => {
-                nextBtn.disabled = input.value.trim() === '';
-            });
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !nextBtn.disabled) {
-                    nextBtn.click();
-                }
-            });
-            nextBtn.addEventListener('click', () => {
-                state.questionsAndAnswers.push({ question: questionText, answer: input.value.trim() });
-                if (state.questionsAndAnswers.length < state.questionCountTarget) {
-                    askNextQuestion();
-                } else {
-                    dom.questionsContainer.innerHTML = '<div class="text-center text-green-400 p-3 bg-green-900/20 rounded-lg">All questions answered! What next?</div>';
-                    dom.refineOptions.classList.remove('hidden');
-                }
-            });
+            dom.refineOptions.classList.remove('hidden');
+            dom.addInputBtn.style.display = 'inline-block'; 
         };
 
-        // --- Step 3: Prompt Generation Logic ---
+        /**
+         * Asks for 3 more questions and appends them to the form.
+         */
+        const askMoreQuestions = async () => {
+            dom.refineOptions.classList.add('hidden');
+            
+            const loadingEl = document.createElement('div');
+            loadingEl.id = 'more-questions-loading';
+            loadingEl.className = 'text-center text-text-secondary mt-4';
+            loadingEl.textContent = 'APG is thinking of more questions...';
+            dom.questionsContainer.appendChild(loadingEl);
+
+            buildStateFromForm(); 
+            
+            const previousQAs = state.questionsAndAnswers.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
+
+            const instruction = `You are an expert prompt assistant. A user is refining a goal.
+User's Goal: "${state.userTopic}"
+Previously asked questions and answers:
+${previousQAs || 'None yet.'}
+**Your Task:** Ask 3 *new*, *different* questions that haven't been covered.
+**Return ONLY a JSON array of 3 strings**, like: ["New Q1", "New Q2", "New Q3"]`;
+
+            const questionText = await callApi("Generate 3 more questions.", instruction);
+            document.getElementById('more-questions-loading').remove(); // Remove loading message
+
+            let newQuestions;
+            try {
+                newQuestions = JSON.parse(questionText);
+                if (!Array.isArray(newQuestions) || !newQuestions.every(q => typeof q === 'string')) {
+                    throw new Error('Invalid JSON array format.');
+                }
+            } catch (error) {
+                console.error("Failed to parse new questions:", error, questionText);
+                alert('Could not generate more questions. The AI returned an invalid format. Please try again.');
+                dom.refineOptions.classList.remove('hidden');
+                return;
+            }
+
+            // Append new questions to the form
+            const baseIndex = dom.questionsContainer.querySelectorAll('.question-item').length;
+            newQuestions.forEach((q, index) => {
+                const newIndex = baseIndex + index;
+                const questionEl = document.createElement('div');
+                // --- ADDING NEW QUESTIONS WITH FULL CAPABILITIES ---
+                questionEl.className = 'question-item space-y-2 mb-4';
+                questionEl.innerHTML = `
+                    <label for="q-${newIndex}" class="block text-lg font-medium text-left">${q}</label>
+                    <input type="text" id="q-${newIndex}" data-question="${q}" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200" placeholder="Your answer...">
+                    <div class="text-right mt-1 space-x-4">
+                        <button type="button" class="manual-input-btn-specific text-sm text-pink-400 hover:underline" data-q-index="${newIndex}">
+                            Add manual input
+                        </button>
+                        <button type="button" class="follow-up-btn text-sm text-primary-glow hover:underline" data-q-index="${newIndex}">
+                            Add follow-up
+                        </button>
+                    </div>
+                    <div class="manual-input-container-specific ml-4 mt-2"></div>
+                    <div class="follow-up-container ml-4 border-l-2 border-border-color pl-4 mt-2"></div>
+                `;
+                // --- END NEW STRUCTURE ---
+                dom.questionsContainer.appendChild(questionEl);
+            });
+            
+            dom.refineOptions.classList.remove('hidden');
+        };
+
+        /**
+         * Helper function to read all Q&As from the DOM inputs and update the state.
+         */
+        const buildStateFromForm = () => {
+            state.questionsAndAnswers = [];
+            // --- MODIFIED SELECTOR ---
+            // Select all inputs AND textareas that have a data-question attribute
+            const inputs = dom.questionsContainer.querySelectorAll('input[type="text"][data-question], textarea[data-question]');
+            
+            inputs.forEach(input => {
+                state.questionsAndAnswers.push({
+                    question: input.dataset.question,
+                    answer: input.value.trim() || "(No answer provided)"
+                });
+            });
+
+            // Also get *general* manual input
+            const manualInput = document.getElementById('manual-input');
+            state.manualInput = manualInput ? manualInput.value.trim() : '';
+        };
+
+        // --- NEW FUNCTION: Handles clicking the "Add manual input" button for a specific question ---
+        const handleSpecificManualInputClick = (event) => {
+            if (!event.target.classList.contains('manual-input-btn-specific')) {
+                return; // Exit if not the correct button
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+
+            const qIndex = btn.dataset.qIndex;
+            const mainInput = document.getElementById(`q-${qIndex}`); // Get the main input
+            const mainQuestionText = mainInput.dataset.question; // Get its question text
+            
+            // Find the container specific to this question item
+            const manualInputContainer = btn.closest('.question-item').querySelector('.manual-input-container-specific');
+            
+            const inputId = `q-${qIndex}-manual`;
+
+            // Add the textarea
+            manualInputContainer.innerHTML = `
+                <label for="${inputId}" class="block text-lg font-medium text-left text-text-secondary">Additional details for this question:</label>
+                <textarea id="${inputId}" data-question="(Manual Details for: ${mainQuestionText})" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200 mt-2" rows="3" placeholder="Add your specific details here..."></textarea>
+            `;
+            
+            // Remove the button
+            btn.remove();
+        };
+
+        // --- Handles clicking the "Add follow-up" button (Unchanged) ---
+        const handleFollowUpClick = async (event) => {
+            if (!event.target.classList.contains('follow-up-btn')) {
+                return; // Exit if the click wasn't on a follow-up button
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Thinking...';
+
+            const qIndex = btn.dataset.qIndex;
+            const mainInput = document.getElementById(`q-${qIndex}`);
+            const mainQuestionText = mainInput.dataset.question;
+            const mainAnswerValue = mainInput.value.trim();
+            const followUpContainer = btn.closest('.question-item').querySelector('.follow-up-container');
+
+            const instruction = `You are a helpful assistant. The user's main goal is "${state.userTopic}".
+The main question you just asked was: "${mainQuestionText}"
+The user's answer to that question is: "${mainAnswerValue || '(No answer yet)'}"
+Based on this, ask ONE single, concise, relevant follow-up question to get more detail.
+Return ONLY the text of the single follow-up question.`;
+
+            const followUpQuestionText = await callApi("Generate a follow-up question.", instruction);
+
+            if (followUpQuestionText && !followUpQuestionText.startsWith("Error:")) {
+                const followUpId = `q-${qIndex}-followup`;
+                followUpContainer.innerHTML = `
+                    <label for="${followUpId}" class="block text-lg font-medium text-left text-text-secondary">${followUpQuestionText}</label>
+                    <input type="text" id="${followUpId}" data-question="${followUpQuestionText}" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200 mt-2" placeholder="Your answer...">
+                `;
+                btn.remove(); // Remove the "Add follow-up" button after it's used
+            } else {
+                console.error("Failed to get follow-up:", followUpQuestionText);
+                btn.textContent = 'Add follow-up'; // Reset on error
+                btn.disabled = false;
+                followUpContainer.innerHTML = `<span class="text-red-400 text-sm">Could not load question. Try again.</span>`;
+                setTimeout(() => { followUpContainer.innerHTML = ''; }, 3000);
+            }
+        };
+
+        // --- Step 3: Prompt Generation Logic (Unchanged) ---
+        // This function works as-is because buildStateFromForm() now collects all inputs
         const generatePrompt = async () => {
             state.currentStep = 2; // Keep UI on refine step while loading
             updateStepUI();
             showLoading(dom.questionsContainer, 'Generating your final prompt...');
             dom.refineOptions.classList.add('hidden');
             
+            buildStateFromForm(); // Collects all data from inputs and textareas
+
             const qasText = state.questionsAndAnswers.map(qa => `- Question: ${qa.question}\n- Answer: ${qa.answer}`).join('\n');
+            // state.manualInput is from the *general* button at the bottom
             const manualInputSection = state.manualInput ? `\n**Additional User-Provided Details:**\n${state.manualInput}` : '';
 
-            // This instruction remains the same, as it's for the final synthesis.
             const instruction = `Your role is an expert prompt engineer. Your ONLY task is to synthesize the user's goal and their answers into a single, comprehensive, and detailed prompt ready for another AI model.
-
 You MUST NOT answer or fulfill the user's request yourself. You are building the prompt FOR them.
-
 The final output must ONLY be the generated prompt text, with no extra conversation, preamble, or explanations like "Here is your prompt:".
-
 **User's Initial Goal:**
 ${state.userTopic}
-
 **User's Refinements (Questions & Answers):**
 ${qasText}
 ${manualInputSection}
-
 Now, generate the final, copy-and-paste-ready prompt below.`;
 
             const finalPrompt = await callApi("Synthesize the information into a final prompt.", instruction);
             
             if (!finalPrompt || finalPrompt.startsWith("Error:")) {
                 showError(dom.questionsContainer, finalPrompt);
-                dom.refineOptions.classList.remove('hidden'); // Show options again on error
+                dom.refineOptions.classList.remove('hidden');
             } else {
                 state.generatedPrompt = finalPrompt.trim();
                 dom.resultText.textContent = state.generatedPrompt;
-                state.currentStep = 2;
+                state.currentStep = 2; 
                 updateStepUI();
             }
         };
 
-        // --- Toolbar JS ---
+        // --- Toolbar JS (Unchanged) ---
         const toggleButton = document.getElementById('toggleBtn');
         const optionsMenu = document.getElementById('optionsMenu');
-
         toggleButton.addEventListener('click', (event) => {
             event.stopPropagation();
             optionsMenu.classList.toggle('visible');
         });
-
         document.addEventListener('click', () => {
             if (optionsMenu.classList.contains('visible')) {
                 optionsMenu.classList.remove('visible');
             }
         });
-
         optionsMenu.addEventListener('click', (event) => {
             event.stopPropagation();
         });
-
         const photoUpload = document.getElementById('photoUpload');
         const fileUpload = document.getElementById('fileUpload');
-
         photoUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -367,7 +502,6 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
                 optionsMenu.classList.remove('visible');
             }
         });
-
         fileUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -376,15 +510,18 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             }
         });
         
-        // --- Event Listeners & Initialization ---
+        // --- Event Listeners & Initialization (MODIFIED) ---
         const resetToStart = () => {
-            state = { currentStep: 0, userTopic: '', questionsAndAnswers: [], questionCountTarget: 5, manualInput: '', generatedPrompt: '' };
+            state = { currentStep: 0, userTopic: '', questionsAndAnswers: [], manualInput: '', generatedPrompt: '' };
             dom.topicInput.value = '';
             dom.questionsContainer.innerHTML = '';
             dom.step1Btn.disabled = true;
             dom.refineOptions.classList.add('hidden');
+            
             const manualInputEl = document.getElementById('manual-input-div');
             if(manualInputEl) manualInputEl.remove();
+            dom.addInputBtn.style.display = 'inline-block';
+
             updateStepUI();
         };
 
@@ -395,17 +532,13 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
         dom.step1Btn.addEventListener('click', () => {
             state.userTopic = dom.topicInput.value.trim();
             if (state.userTopic) {
-                state.currentStep = 1;
-                updateStepUI();
-                askNextQuestion();
+                loadInitialQuestions();
             }
         });
 
-        dom.moreQuestionsBtn.addEventListener('click', () => {
-            state.questionCountTarget += 3;
-            askNextQuestion();
-        });
+        dom.moreQuestionsBtn.addEventListener('click', askMoreQuestions);
 
+        // This is the handler for the *general* manual input button
         dom.addInputBtn.addEventListener('click', () => {
             dom.addInputBtn.style.display = 'none';
             const inputEl = document.createElement('div');
@@ -415,19 +548,12 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
                 <textarea id="manual-input" rows="4" class="w-full p-2 rounded-lg border border-border-color"></textarea>
             `;
             dom.questionsContainer.appendChild(inputEl);
-            document.getElementById('manual-input').addEventListener('input', (e) => {
-                state.manualInput = e.target.value;
-            });
         });
         
         dom.generatePromptBtn.addEventListener('click', generatePrompt);
 
         dom.refineMoreBtn.addEventListener('click', () => {
             state.currentStep = 1;
-            dom.step2Title.textContent = "Refining your prompt...";
-            dom.questionsContainer.innerHTML = '<div class="text-center text-green-400 p-3 bg-green-900/20 rounded-lg">You can now ask more questions or add manual details.</div>';
-            dom.refineOptions.classList.remove('hidden');
-            dom.addInputBtn.style.display = 'inline-block';
             updateStepUI();
         });
 
@@ -440,8 +566,13 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
         dom.startOverBtn.addEventListener('click', resetToStart);
 
+        // --- NEW: Add the delegated event listeners ---
+        dom.questionsContainer.addEventListener('click', handleFollowUpClick);
+        dom.questionsContainer.addEventListener('click', handleSpecificManualInputClick);
+
         // Initial UI setup
         resetToStart();
+        // --- END OF MODIFIED SCRIPT ---
     </script>
 </body>
 </html>
