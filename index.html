@@ -8,6 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
         :root {
             --background-dark: #121212;
@@ -33,6 +36,66 @@
         .step-item .step-circle { transition: all 0.3s ease; }
         .step-line { background-color: var(--border-color); }
         textarea, input, pre { background-color: var(--input-bg); color: var(--text-primary); }
+
+        /* --- ADDED: Toolbar Styles (Themed) --- */
+        .attachment-toolbar {
+            position: relative; /* Key for positioning the menu */
+            display: flex;
+            align-items: center;
+        }
+
+        .toolbar-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background-color: var(--surface-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            margin: 0 4px;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .toolbar-btn:hover {
+            background-color: #333; /* Slightly lighter dark */
+            color: var(--text-primary);
+        }
+
+        .options-menu {
+            position: absolute;
+            bottom: 60px; /* Position it above the '+' button */
+            left: -10px;
+            
+            display: flex;
+            padding: 8px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 25px; /* Pill shape */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            
+            /* Start hidden and transition */
+            opacity: 0;
+            transform: translateY(10px);
+            visibility: hidden;
+            transition: all 0.2s ease-out;
+            z-index: 10; /* Ensure it's on top */
+        }
+
+        .options-menu.visible {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        .file-input {
+            display: none;
+        }
+        /* --- END: Added Toolbar Styles --- */
+
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
@@ -54,6 +117,26 @@
                 <div id="step-1-content">
                     <h3 class="text-2xl font-semibold mb-4">What's your topic or goal?</h3>
                     <textarea id="topic-input" rows="5" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200" placeholder="e.g., A marketing campaign for a new coffee brand"></textarea>
+                    
+                    <div class="attachment-toolbar mt-4">
+                        <button type="button" id="toggleBtn" class="toolbar-btn" title="Add attachments">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                
+                        <div id="optionsMenu" class="options-menu">
+                            
+                            <label for="photoUpload" class="toolbar-btn" title="Add Photo">
+                                <i class="fa-solid fa-image"></i>
+                            </label>
+                            <input type="file" id="photoUpload" class="file-input" accept="image/*">
+                
+                            <label for="fileUpload" class="toolbar-btn" title="Add File">
+                                <i class="fa-solid fa-paperclip"></i>
+                            </label>
+                            <input type="file" id="fileUpload" class="file-input">
+                            
+                        </div>
+                    </div>
                     <button id="step-1-btn" class="glow-button text-white font-semibold px-8 py-3 rounded-full mt-6" disabled>Continue</button>
                 </div>
 
@@ -243,6 +326,54 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
                 updateStepUI();
             }
         };
+
+        // --- ADDED: Toolbar JS ---
+        // Get the new toolbar elements
+        const toggleButton = document.getElementById('toggleBtn');
+        const optionsMenu = document.getElementById('optionsMenu');
+
+        // 1. Toggle the menu when the '+' button is clicked
+        toggleButton.addEventListener('click', (event) => {
+            event.stopPropagation(); // Stop click from bubbling to the document
+            optionsMenu.classList.toggle('visible');
+        });
+
+        // 2. Close the menu if you click anywhere else on the page
+        document.addEventListener('click', () => {
+            if (optionsMenu.classList.contains('visible')) {
+                optionsMenu.classList.remove('visible');
+            }
+        });
+
+        // 3. Stop the menu itself from closing when you click inside it
+        optionsMenu.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+
+        // 4. Handle the file selection (optional: add your logic here)
+        const photoUpload = document.getElementById('photoUpload');
+        const fileUpload = document.getElementById('fileUpload');
+
+        photoUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                console.log('Photo selected:', file.name);
+                // You could add the file name to the text area, for example:
+                // dom.topicInput.value += `\n[Attached Photo: ${file.name}]`;
+                optionsMenu.classList.remove('visible'); // Hide menu after selection
+            }
+        });
+
+        fileUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                console.log('File selected:', file.name);
+                // dom.topicInput.value += `\n[Attached File: ${file.name}]`;
+                optionsMenu.classList.remove('visible'); // Hide menu after selection
+            }
+        });
+        // --- END: Added Toolbar JS ---
+
 
         // --- Event Listeners & Initialization ---
         const resetToStart = () => {
