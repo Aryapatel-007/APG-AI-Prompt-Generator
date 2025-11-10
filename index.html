@@ -4,12 +4,12 @@
     <meta charset="UTF8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APG-AI Prompt Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display.swap" rel="stylesheet">
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)">
+    <link rel="preconnect" href="[https://fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
+    <link href="[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)" rel="stylesheet">
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css)">
 
     <style>
         :root {
@@ -243,17 +243,24 @@ Your entire response must be in the format: ["Question 1", "Question 2", "Questi
 
             let questions;
             try {
-                questions = JSON.parse(questionText);
+                // --- NEW ROBUST PARSER ---
+                const match = questionText.match(/\[.*\]/s); // Find text between [ and ]
+                if (!match) {
+                    throw new Error("No JSON array found in AI response.");
+                }
+                questions = JSON.parse(match[0]); // Parse only the matched array
+                // --- END ROBUST PARSER ---
+
                 if (!Array.isArray(questions) || questions.length === 0 || !questions.every(q => typeof q === 'string')) {
                     throw new Error('Invalid JSON array format.');
                 }
             } catch (error) {
-                console.error("Failed to parse questions:", error, questionText);
+                console.error("Failed to parse questions:", error, questionText); // Log the original bad text
                 showError(dom.questionsContainer, "Error: Could not generate questions. The AI returned an invalid format. Please try again.");
                 return;
             }
 
-            dom.step2Title.textContent = 'Refine your prompt.';
+            dom.step2Title = 'Refine your prompt.';
             dom.questionsContainer.innerHTML = ''; 
             
             questions.forEach((q, index) => {
@@ -306,12 +313,19 @@ Your entire response must be in the format: ["New Q1", "New Q2", "New Q3"]`;
 
             let newQuestions;
             try {
-                newQuestions = JSON.parse(questionText);
+                // --- NEW ROBUST PARSER ---
+                const match = questionText.match(/\[.*\]/s); // Find text between [ and ]
+                if (!match) {
+                    throw new Error("No JSON array found in AI response.");
+                }
+                newQuestions = JSON.parse(match[0]); // Parse only the matched array
+                // --- END ROBUST PARSER ---
+
                 if (!Array.isArray(newQuestions) || !newQuestions.every(q => typeof q === 'string')) {
                     throw new Error('Invalid JSON array format.');
                 }
             } catch (error) {
-                console.error("Failed to parse new questions:", error, questionText);
+                console.error("Failed to parse new questions:", error, questionText); // Log original bad text
                 alert('Could not generate more questions. The AI returned an invalid format. Please try again.');
                 dom.refineOptions.classList.remove('hidden');
                 return;
@@ -451,7 +465,6 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
             const finalPrompt = await callApi("Synthesize the information into a final prompt.", instruction);
             
-            // --- FIX #2: Changed finalProlog to finalPrompt ---
             if (!finalPrompt || finalPrompt.startsWith("Error:")) {
                 showError(dom.questionsContainer, finalPrompt);
                 dom.refineOptions.classList.remove('hidden');
@@ -557,7 +570,6 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
         dom.moreQuestionsBtn.addEventListener('click', askMoreQuestions);
 
-        // --- FIX #1: Changed ()D => to () => ---
         dom.addInputBtn.addEventListener('click', () => {
             dom.addInputBtn.style.display = 'none';
             const inputEl = document.createElement('div');
