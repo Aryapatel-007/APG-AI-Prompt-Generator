@@ -20,19 +20,70 @@
             --border-color: #333333;
             --border-color-focus: var(--primary-glow);
         }
-        body { font-family: 'Inter', sans-serif; background-color: var(--background-dark); color: var(--text-primary); }
-        .apg-gradient-text { background-image: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow)); background-clip: text; -webkit-background-clip: text; color: transparent; }
-        .glow-button { background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow)); transition: all 0.3s ease; box-shadow: 0 0 15px rgba(167, 139, 250, 0.3); }
-        .glow-button:hover { box-shadow: 0 0 25px rgba(167, 139, 250, 0.5); transform: scale(1.02); }
-        .glow-button:disabled { background: #333; color: #666; box-shadow: none; cursor: not-allowed; }
-        .secondary-button { background-color: var(--surface-dark); border: 1px solid var(--border-color); color: var(--text-primary); transition: background-color 0.2s; }
-        .secondary-button:hover { background-color: rgba(255, 255, 255, 0.1); }
-        textarea:focus, input:focus { outline: none; box-shadow: 0 0 15px rgba(167, 139, 250, 0.2); border-color: var(--border-color-focus) !important; }
-        .step-item.active .step-circle { background-color: var(--primary-glow); border-color: var(--primary-glow); color: var(--background-dark); transform: scale(1.1); }
-        .step-item.active .step-text { color: var(--text-primary); font-weight: 600; }
-        .step-item .step-circle { transition: all 0.3s ease; }
-        .step-line { background-color: var(--border-color); }
-        textarea, input, pre { background-color: var(--input-bg); color: var(--text-primary); }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+        }
+
+        .apg-gradient-text {
+            background-image: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -moz-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            -moz-text-fill-color: transparent;
+        }
+
+        .glow-button {
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.3);
+        }
+        .glow-button:hover {
+            box-shadow: 0 0 25px rgba(167, 139, 250, 0.5);
+            transform: scale(1.02);
+        }
+        .glow-button:disabled {
+            background: #333;
+            color: #666;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        textarea:focus, input:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.2);
+            border-color: var(--border-color-focus) !important;
+        }
+        
+        .step-item.active .step-circle {
+            background-color: var(--primary-glow);
+            border-color: var(--primary-glow);
+            color: var(--background-dark);
+            transform: scale(1.1);
+        }
+        .step-item.active .step-text {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .step-item .step-circle {
+            transition: all 0.3s ease;
+        }
+        .step-line {
+            background-color: var(--border-color);
+            transition: background-color 0.3s ease;
+        }
+        .step-item.active ~ .step-line {
+             background-color: var(--primary-glow);
+        }
+
+        textarea,
+        #questions-container input,
+        #result-text {
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
@@ -41,14 +92,36 @@
         <h1 class="text-4xl md:text-5xl font-bold mb-3 apg-gradient-text">APG-AI Prompt Generator</h1>
         <p class="text-lg text-text-secondary mb-8">Create the perfect prompts, <span class="apg-gradient-text font-semibold">every time.</span></p>
 
+        <!-- Main Container -->
         <div class="w-full bg-surface-dark p-6 rounded-2xl border border-border-color">
-            <div id="tool-view">
+            
+            <!-- Auth View -->
+            <div id="auth-view">
+                 <h3 class="text-2xl font-semibold mb-2">Get Started</h3>
+                 <p class="text-text-secondary mb-6">Connect your Google Account</p>
+                 <button id="connect-google-btn" class="glow-button text-white font-semibold px-8 py-3 rounded-full mt-4 flex items-center justify-center mx-auto gap-3">
+                    <svg class="w-5 h-5" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.641-3.219-11.331-7.962l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.927,34.551,44,27.938,44,20C44,22.659,43.862,21.35,43.611,20.083z"></path></svg>
+                    Connect with Google
+                 </button>
+            </div>
+
+            <!-- Tool View -->
+            <div id="tool-view" class="hidden">
                 <div class="flex items-center justify-center w-full mb-8">
-                    <div class="step-item flex items-center text-text-secondary" id="step-1-indicator"><div class="step-circle w-8 h-8 rounded-full bg-surface-dark border-2 border-border-color flex items-center justify-center font-bold">1</div><span class="step-text ml-3">Goal</span></div>
+                    <div class="step-item flex items-center text-text-secondary" id="step-1-indicator">
+                        <div class="step-circle w-8 h-8 rounded-full bg-surface-dark border-2 border-border-color flex items-center justify-center font-bold">1</div>
+                        <span class="step-text ml-3">Topic</span>
+                    </div>
                     <div class="step-line flex-grow h-0.5 mx-4"></div>
-                    <div class="step-item flex items-center text-text-secondary" id="step-2-indicator"><div class="step-circle w-8 h-8 rounded-full bg-surface-dark border-2 border-border-color flex items-center justify-center font-bold">2</div><span class="step-text ml-3">Refine</span></div>
+                    <div class="step-item flex items-center text-text-secondary" id="step-2-indicator">
+                        <div class="step-circle w-8 h-8 rounded-full bg-surface-dark border-2 border-border-color flex items-center justify-center font-bold">2</div>
+                        <span class="step-text ml-3">Refine</span>
+                    </div>
                     <div class="step-line flex-grow h-0.5 mx-4"></div>
-                    <div class="step-item flex items-center text-text-secondary" id="step-3-indicator"><div class="step-circle w-8 h-8 rounded-full bg-surface-dark border-2 border-border-color flex items-center justify-center font-bold">3</div><span class="step-text ml-3">Generate</span></div>
+                    <div class="step-item flex items-center text-text-secondary" id="step-3-indicator">
+                        <div class="step-circle w-8 h-8 rounded-full bg-surface-dark border-2 border-border-color flex items-center justify-center font-bold">3</div>
+                        <span class="step-text ml-3">Generate</span>
+                    </div>
                 </div>
 
                 <div id="step-1-content">
@@ -58,23 +131,20 @@
                 </div>
 
                 <div id="step-2-content" class="hidden">
-                    <h3 id="step-2-title" class="text-2xl font-semibold mb-4">Refine your prompt.</h3>
+                    <h3 class="text-2xl font-semibold mb-4">Step 2: Answer a few questions to refine your prompt.</h3>
                     <div id="questions-container" class="space-y-4 text-left"></div>
-                    <div id="refine-options" class="hidden mt-6 space-x-2">
-                        <button id="add-input-btn" class="secondary-button font-semibold px-6 py-3 rounded-full">Add Manual Input</button>
-                        <button id="more-questions-btn" class="secondary-button font-semibold px-6 py-3 rounded-full">Ask 3 More Questions</button>
-                        <button id="generate-prompt-btn" class="glow-button text-white font-semibold px-6 py-3 rounded-full">Generate Prompt</button>
-                    </div>
+                    <button id="step-2-btn" class="glow-button text-white font-semibold px-8 py-3 rounded-full mt-6">Generate Prompt</button>
                 </div>
                 
                 <div id="step-3-content" class="hidden">
-                    <h3 class="text-2xl font-semibold mb-4">Your Generated Prompt</h3>
+                    <h3 class="text-2xl font-semibold mb-4">Step 3: Your Generated Prompt</h3>
                     <div id="result-container" class="text-left">
-                        <pre id="result-text" class="w-full p-4 rounded-lg overflow-x-auto whitespace-pre-wrap text-sm min-h-[16rem]"></pre>
-                        <div class="flex items-center justify-center flex-wrap gap-4 mt-6">
-                            <button id="copy-btn" class="glow-button text-white font-semibold px-8 py-3 rounded-full"><span id="copy-text">Copy Prompt</span></button>
-                            <button id="refine-more-btn" class="secondary-button font-semibold px-8 py-3 rounded-full">Refine More</button>
-                            <button id="start-over-btn" class="secondary-button font-semibold px-8 py-3 rounded-full">Start Over</button>
+                        <pre id="result-text" class="w-full p-4 rounded-lg custom-scrollbar overflow-x-auto whitespace-pre-wrap text-sm h-64"></pre>
+                        <div class="flex items-center justify-center gap-4">
+                            <button id="start-over-btn" class="bg-surface-dark border border-border-color text-text-primary font-semibold px-8 py-3 rounded-full mt-6 hover:bg-white/10 transition-colors">Start Over</button>
+                            <button id="copy-btn" class="glow-button text-white font-semibold px-8 py-3 rounded-full mt-6">
+                                <span id="copy-text">Copy Prompt</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -84,36 +154,42 @@
     
     <script>
         const dom = {
+            authView: document.getElementById('auth-view'),
+            toolView: document.getElementById('tool-view'),
+            connectGoogleBtn: document.getElementById('connect-google-btn'),
             stepIndicators: [document.getElementById('step-1-indicator'), document.getElementById('step-2-indicator'), document.getElementById('step-3-indicator')],
             stepContents: [document.getElementById('step-1-content'), document.getElementById('step-2-content'), document.getElementById('step-3-content')],
             step1Btn: document.getElementById('step-1-btn'),
+            step2Btn: document.getElementById('step-2-btn'),
             topicInput: document.getElementById('topic-input'),
             questionsContainer: document.getElementById('questions-container'),
-            step2Title: document.getElementById('step-2-title'),
-            refineOptions: document.getElementById('refine-options'),
-            addInputBtn: document.getElementById('add-input-btn'),
-            moreQuestionsBtn: document.getElementById('more-questions-btn'),
-            generatePromptBtn: document.getElementById('generate-prompt-btn'),
             resultText: document.getElementById('result-text'),
             copyBtn: document.getElementById('copy-btn'),
             copyText: document.getElementById('copy-text'),
-            refineMoreBtn: document.getElementById('refine-more-btn'),
             startOverBtn: document.getElementById('start-over-btn'),
         };
 
-        let state = {
-            currentStep: 0,
-            userTopic: '',
-            questionsAndAnswers: [],
-            questionCountTarget: 5,
-            manualInput: '',
-            generatedPrompt: ''
-        };
+        let currentStep = 0;
+        let userTopic = '';
+        let userApiKey = ''; 
 
-        // --- API Call Logic ---
-        async function callApi(prompt, systemInstruction) {
-            const API_URL = /api/generate; 
-            const payload = { prompt, systemInstruction };
+        async function callGeminiAPI(prompt, systemInstruction) {
+            if (!userApiKey) {
+                 const key = prompt("Please enter your Gemini API Key for this session:");
+                 if (!key) {
+                     alert("API Key is required to proceed.");
+                     return null;
+                 }
+                 userApiKey = key;
+            }
+
+            const API_URL = https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${userApiKey};
+            
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
+            };
+
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
@@ -121,196 +197,138 @@
                     body: JSON.stringify(payload)
                 });
                 if (!response.ok) {
-                    const errorBody = await response.json().catch(() => ({}));
-                    console.error("API Error from backend:", errorBody);
-                    return Error: ${errorBody.error || response.statusText};
+                    const errorBody = await response.json();
+                    console.error("API Error:", errorBody);
+                    return Error: ${errorBody.error.message};
                 }
                 const data = await response.json();
-                return data.text;
+                return data.candidates[0].content.parts[0].text;
             } catch (error) {
-                console.error("Fetch Error to backend:", error);
-                return "Error: Could not connect to the server.";
+                console.error("Fetch Error:", error);
+                return "An error occurred while contacting the API.";
             }
         }
 
-        // --- UI Update Logic ---
         const updateStepUI = () => {
-            dom.stepIndicators.forEach((indicator, index) => indicator.classList.toggle('active', index === state.currentStep));
-            dom.stepContents.forEach((content, index) => content.classList.toggle('hidden', index !== state.currentStep));
+            dom.stepIndicators.forEach((indicator, index) => {
+                indicator.classList.toggle('active', index === currentStep);
+            });
+            dom.stepContents.forEach((content, index) => {
+                content.classList.toggle('hidden', index !== currentStep);
+            });
         };
 
-        const showLoading = (container, message) => {
-            container.innerHTML = <div class="text-center text-text-secondary">${message}</div>;
-        };
+        const generateQuestions = async (topic) => {
+            dom.questionsContainer.innerHTML = '<div class="text-center text-text-secondary">APG is thinking...</div>';
+            
+            const systemInstruction = "You are a prompt engineering assistant. Based on the user's topic, ask them a few (between 2 and 5) insightful, clarifying questions to help build a better prompt. Return ONLY the questions, each on a new line, without any preamble or numbering.";
+            const questionsText = await callGeminiAPI(topic, systemInstruction);
 
-        const showError = (container, message) => {
-            container.innerHTML = <div class="text-center text-red-400 p-4 bg-red-900/20 rounded-lg">${message}</div>;
-        };
-        
-        // --- Step 2: Question Logic ---
-        const askNextQuestion = async () => {
-            dom.refineOptions.classList.add('hidden');
-            showLoading(dom.questionsContainer, 'APG is thinking...');
-            
-            const previousQAs = state.questionsAndAnswers.map(qa => Q: ${qa.question}\nA: ${qa.answer}).join('\n\n');
-            
-            const instruction = `You are a prompt engineering assistant. Your goal is to help a user refine their initial goal by asking clarifying questions.
-            
-            User's Goal: "${state.userTopic}"
-            
-            Previously asked questions and their answers:
-            ${previousQAs || 'None yet.'}
-            
-            Based on the goal and the conversation so far, ask the user ONE new, insightful question to better understand their needs. The question should build on previous answers if they exist.
-            
-            Return ONLY the text of the single question, with no preamble, numbering, or explanation.`;
-            
-            const questionText = await callApi("Generate the next question.", instruction);
-
-            if (!questionText || questionText.startsWith("Error:")) {
-                showError(dom.questionsContainer, questionText);
+            if (!questionsText || questionsText.startsWith("Error:")) {
+                dom.questionsContainer.innerHTML = <div class="text-center text-red-400">${questionsText || 'Failed to generate questions.'}</div>;
                 return;
             }
+            
+            const questions = questionsText.split('\n').filter(q => q.trim() !== '');
 
-            dom.step2Title.textContent = Refine your prompt (${state.questionsAndAnswers.length + 1}/${state.questionCountTarget});
-            dom.questionsContainer.innerHTML = `
-                <div class="space-y-3">
-                    <label for="current-q" class="block text-lg font-medium text-left">${questionText}</label>
-                    <input type="text" id="current-q" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200" placeholder="Your answer...">
-                    <div class="text-right">
-                        <button id="next-q-btn" class="glow-button text-white font-semibold px-6 py-2 rounded-full mt-2" disabled>Next</button>
-                    </div>
-                </div>
-            `;
-
-            const input = document.getElementById('current-q');
-            const nextBtn = document.getElementById('next-q-btn');
-
-            input.focus();
-            input.addEventListener('input', () => {
-                nextBtn.disabled = input.value.trim() === '';
-            });
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !nextBtn.disabled) {
-                    nextBtn.click();
-                }
-            });
-            nextBtn.addEventListener('click', () => {
-                state.questionsAndAnswers.push({ question: questionText, answer: input.value.trim() });
-                if (state.questionsAndAnswers.length < state.questionCountTarget) {
-                    askNextQuestion();
-                } else {
-                    dom.questionsContainer.innerHTML = '<div class="text-center text-green-400 p-3 bg-green-900/20 rounded-lg">All questions answered! What next?</div>';
-                    dom.refineOptions.classList.remove('hidden');
-                }
+            dom.questionsContainer.innerHTML = '';
+            questions.forEach((q, i) => {
+                const questionEl = document.createElement('div');
+                questionEl.innerHTML = `
+                    <label for="q-${i}" class="block text-sm font-medium mb-1 text-left">${q}</label>
+                    <input type="text" id="q-${i}" class="w-full p-2 rounded-lg border border-border-color transition-colors duration-200">
+                `;
+                dom.questionsContainer.appendChild(questionEl);
             });
         };
-
-        // --- Step 3: Prompt Generation Logic ---
+        
         const generatePrompt = async () => {
-            state.currentStep = 2; // Keep UI on refine step while loading
-            updateStepUI();
-            showLoading(dom.questionsContainer, 'Generating your final prompt...');
-            dom.refineOptions.classList.add('hidden');
-            
-            const qasText = state.questionsAndAnswers.map(qa => - Question: ${qa.question}\n- Answer: ${qa.answer}).join('\n');
-            const manualInputSection = state.manualInput ? \n**Additional User-Provided Details:**\n${state.manualInput} : '';
+            dom.step2Btn.disabled = true;
+            dom.step2Btn.innerHTML = `
+                <div class="flex items-center justify-center gap-2">
+                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Generating...</span>
+                </div>`;
 
-            const instruction = `Your role is an expert prompt engineer. Your ONLY task is to synthesize the user's goal and their answers into a single, comprehensive, and detailed prompt ready for another AI model.
+            const questionsAndAnswers = Array.from(dom.questionsContainer.querySelectorAll('div')).map(div => {
+                const label = div.querySelector('label').textContent;
+                const answer = div.querySelector('input').value || 'Not specified.';
+                return - ${label}\n  - ${answer};
+            }).join('\n');
 
-You MUST NOT answer or fulfill the user's request yourself. You are building the prompt FOR them.
-
-The final output must ONLY be the generated prompt text, with no extra conversation, preamble, or explanations like "Here is your prompt:".
+            const finalPromptInstruction = `
+Based on the user's initial goal and their answers to the refining questions, create a final, comprehensive, and well-structured prompt. The prompt should be ready to be copied and pasted into any AI model. Do not include any preamble or explanation, just the final prompt itself.
 
 *User's Initial Goal:*
-${state.userTopic}
+${userTopic}
 
-*User's Refinements (Questions & Answers):*
-${qasText}
-${manualInputSection}
+*User's Refinements:*
+${questionsAndAnswers}
 
-Now, generate the final, copy-and-paste-ready prompt below.`;
-
-            const finalPrompt = await callApi("Synthesize the information into a final prompt.", instruction);
+Generate the final prompt below.
+`;
             
-            if (!finalPrompt || finalPrompt.startsWith("Error:")) {
-                showError(dom.questionsContainer, finalPrompt);
-                dom.refineOptions.classList.remove('hidden'); // Show options again on error
+            const refinedPrompt = await callGeminiAPI(finalPromptInstruction);
+
+            if (!refinedPrompt || refinedPrompt.startsWith("Error:")) {
+                 dom.resultText.textContent = refinedPrompt || 'Failed to generate prompt.';
             } else {
-                state.generatedPrompt = finalPrompt.trim();
-                dom.resultText.textContent = state.generatedPrompt;
-                state.currentStep = 2;
-                updateStepUI();
+                dom.resultText.textContent = refinedPrompt.trim();
             }
+            
+            currentStep = 2;
+            updateStepUI();
+            dom.step2Btn.disabled = false;
+            dom.step2Btn.textContent = 'Generate Prompt';
         };
 
-        // --- Event Listeners & Initialization ---
         const resetToStart = () => {
-            state = { currentStep: 0, userTopic: '', questionsAndAnswers: [], questionCountTarget: 5, manualInput: '', generatedPrompt: '' };
+            currentStep = 0;
+            userTopic = '';
             dom.topicInput.value = '';
             dom.questionsContainer.innerHTML = '';
             dom.step1Btn.disabled = true;
-            dom.refineOptions.classList.add('hidden');
-            const manualInputEl = document.getElementById('manual-input-div');
-            if(manualInputEl) manualInputEl.remove();
             updateStepUI();
         };
+
+        dom.connectGoogleBtn.addEventListener('click', () => {
+            console.log("Simulating OAuth flow...");
+            dom.authView.classList.add('hidden');
+            dom.toolView.classList.remove('hidden');
+            updateStepUI();
+        });
 
         dom.topicInput.addEventListener('input', () => {
             dom.step1Btn.disabled = dom.topicInput.value.trim() === '';
         });
 
         dom.step1Btn.addEventListener('click', () => {
-            state.userTopic = dom.topicInput.value.trim();
-            if (state.userTopic) {
-                state.currentStep = 1;
+            userTopic = dom.topicInput.value.trim();
+            if (userTopic) {
+                currentStep = 1;
                 updateStepUI();
-                askNextQuestion();
+                generateQuestions(userTopic);
             }
         });
 
-        dom.moreQuestionsBtn.addEventListener('click', () => {
-            state.questionCountTarget += 3;
-            askNextQuestion();
-        });
-
-        dom.addInputBtn.addEventListener('click', () => {
-            dom.addInputBtn.style.display = 'none'; // Hide button after clicking
-            const inputEl = document.createElement('div');
-            inputEl.id = 'manual-input-div';
-            inputEl.innerHTML = `
-                <label for="manual-input" class="block text-sm font-medium mt-4 mb-2 text-left">Add any other details that weren't covered:</label>
-                <textarea id="manual-input" rows="4" class="w-full p-2 rounded-lg border border-border-color"></textarea>
-            `;
-            dom.questionsContainer.appendChild(inputEl);
-            document.getElementById('manual-input').addEventListener('input', (e) => {
-                state.manualInput = e.target.value;
-            });
-        });
-        
-        dom.generatePromptBtn.addEventListener('click', generatePrompt);
-
-        dom.refineMoreBtn.addEventListener('click', () => {
-            // Go back to step 2 to ask more questions or add input
-            state.currentStep = 1;
-            dom.step2Title.textContent = "Refining your prompt...";
-            dom.questionsContainer.innerHTML = '<div class="text-center text-green-400 p-3 bg-green-900/20 rounded-lg">You can now ask more questions or add manual details.</div>';
-            dom.refineOptions.classList.remove('hidden');
-            dom.addInputBtn.style.display = 'inline-block'; // Show manual input btn again
-            updateStepUI();
-        });
+        dom.step2Btn.addEventListener('click', generatePrompt);
+        dom.startOverBtn.addEventListener('click', resetToStart);
 
         dom.copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(dom.resultText.textContent).then(() => {
                 dom.copyText.textContent = 'Copied!';
-                setTimeout(() => { dom.copyText.textContent = 'Copy Prompt'; }, 2000);
+                setTimeout(() => {
+                    dom.copyText.textContent = 'Copy Prompt';
+                }, 2000);
             });
         });
 
-        dom.startOverBtn.addEventListener('click', resetToStart);
+        updateStepUI();
+        dom.step1Btn.disabled = true;
 
-        // Initial UI setup
-        resetToStart();
     </script>
 </body>
 </html>
