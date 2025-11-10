@@ -46,7 +46,7 @@ module.exports = async (req, res) => {
       headers: {
         'Content-Type': 'application/json',
         // Mistral uses a Bearer token for authorization
-        'Authorization': Bearer ${MISTRAL_API_KEY} 
+        'Authorization': `Bearer ${MISTRAL_API_KEY}` 
       },
       body: JSON.stringify(payload),
     });
