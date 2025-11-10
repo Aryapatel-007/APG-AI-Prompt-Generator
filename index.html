@@ -190,7 +190,7 @@
 
         // --- API Call Logic (Unchanged) ---
         async function callApi(prompt, systemInstruction) {
-            const API_URL = /api/generate; 
+            const API_URL = `/api/generate`; 
             const payload = { prompt, systemInstruction };
             try {
                 const response = await fetch(API_URL, {
@@ -201,7 +201,7 @@
                 if (!response.ok) {
                     const errorBody = await response.json().catch(() => ({}));
                     console.error("API Error from backend:", errorBody);
-                    return Error: ${errorBody.error || response.statusText};
+                    return `Error: ${errorBody.error || response.statusText}`;
                 }
                 const data = await response.json();
                 return data.text;
@@ -218,11 +218,11 @@
         };
 
         const showLoading = (container, message) => {
-            container.innerHTML = <div class="text-center text-text-secondary">${message}</div>;
+            container.innerHTML = `<div class="text-center text-text-secondary">${message}</div>`;
         };
 
         const showError = (container, message) => {
-            container.innerHTML = <div class="text-center text-red-400 p-4 bg-red-900/20 rounded-lg">${message}</div>;
+            container.innerHTML = `<div class="text-center text-red-400 p-4 bg-red-900/20 rounded-lg">${message}</div>`;
         };
         
         // --- Step 2: Question Logic (MODIFIED) ---
@@ -238,8 +238,8 @@
             
             const instruction = `You are an expert prompt engineering assistant. Your goal is to help a user refine their initial goal.
 User's Initial Goal: "${state.userTopic}"
-*Your Task:* Generate 5 insightful, clarifying questions to ask the user. The questions should cover different aspects like Audience, Format, Tone, Key Details, and Constraints.
-*Return ONLY a JSON array of 5 strings*, like: ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]`;
+**Your Task:** Generate 5 insightful, clarifying questions to ask the user. The questions should cover different aspects like Audience, Format, Tone, Key Details, and Constraints.
+**Return ONLY a JSON array of 5 strings**, like: ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]`;
 
             const questionText = await callApi("Generate 5 initial questions.", instruction);
 
@@ -299,14 +299,14 @@ User's Initial Goal: "${state.userTopic}"
 
             buildStateFromForm(); 
             
-            const previousQAs = state.questionsAndAnswers.map(qa => Q: ${qa.question}\nA: ${qa.answer}).join('\n\n');
+            const previousQAs = state.questionsAndAnswers.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
 
             const instruction = `You are an expert prompt assistant. A user is refining a goal.
 User's Goal: "${state.userTopic}"
 Previously asked questions and answers:
 ${previousQAs || 'None yet.'}
-*Your Task:* Ask 3 new, different questions that haven't been covered.
-*Return ONLY a JSON array of 3 strings*, like: ["New Q1", "New Q2", "New Q3"]`;
+**Your Task:** Ask 3 *new*, *different* questions that haven't been covered.
+**Return ONLY a JSON array of 3 strings**, like: ["New Q1", "New Q2", "New Q3"]`;
 
             const questionText = await callApi("Generate 3 more questions.", instruction);
             document.getElementById('more-questions-loading').remove(); // Remove loading message
@@ -368,7 +368,7 @@ ${previousQAs || 'None yet.'}
                 });
             });
 
-            // Also get general manual input
+            // Also get *general* manual input
             const manualInput = document.getElementById('manual-input');
             state.manualInput = manualInput ? manualInput.value.trim() : '';
         };
@@ -383,13 +383,13 @@ ${previousQAs || 'None yet.'}
             btn.disabled = true;
 
             const qIndex = btn.dataset.qIndex;
-            const mainInput = document.getElementById(q-${qIndex}); // Get the main input
+            const mainInput = document.getElementById(`q-${qIndex}`); // Get the main input
             const mainQuestionText = mainInput.dataset.question; // Get its question text
             
             // Find the container specific to this question item
             const manualInputContainer = btn.closest('.question-item').querySelector('.manual-input-container-specific');
             
-            const inputId = q-${qIndex}-manual;
+            const inputId = `q-${qIndex}-manual`;
 
             // Add the textarea
             manualInputContainer.innerHTML = `
@@ -412,7 +412,7 @@ ${previousQAs || 'None yet.'}
             btn.textContent = 'Thinking...';
 
             const qIndex = btn.dataset.qIndex;
-            const mainInput = document.getElementById(q-${qIndex});
+            const mainInput = document.getElementById(`q-${qIndex}`);
             const mainQuestionText = mainInput.dataset.question;
             const mainAnswerValue = mainInput.value.trim();
             const followUpContainer = btn.closest('.question-item').querySelector('.follow-up-container');
@@ -426,7 +426,7 @@ Return ONLY the text of the single follow-up question.`;
             const followUpQuestionText = await callApi("Generate a follow-up question.", instruction);
 
             if (followUpQuestionText && !followUpQuestionText.startsWith("Error:")) {
-                const followUpId = q-${qIndex}-followup;
+                const followUpId = `q-${qIndex}-followup`;
                 followUpContainer.innerHTML = `
                     <label for="${followUpId}" class="block text-lg font-medium text-left text-text-secondary">${followUpQuestionText}</label>
                     <input type="text" id="${followUpId}" data-question="${followUpQuestionText}" class="w-full p-3 rounded-lg border border-border-color transition-colors duration-200 mt-2" placeholder="Your answer...">
@@ -436,7 +436,7 @@ Return ONLY the text of the single follow-up question.`;
                 console.error("Failed to get follow-up:", followUpQuestionText);
                 btn.textContent = 'Add follow-up'; // Reset on error
                 btn.disabled = false;
-                followUpContainer.innerHTML = <span class="text-red-400 text-sm">Could not load question. Try again.</span>;
+                followUpContainer.innerHTML = `<span class="text-red-400 text-sm">Could not load question. Try again.</span>`;
                 setTimeout(() => { followUpContainer.innerHTML = ''; }, 3000);
             }
         };
@@ -451,16 +451,16 @@ Return ONLY the text of the single follow-up question.`;
             
             buildStateFromForm(); // Collects all data from inputs and textareas
 
-            const qasText = state.questionsAndAnswers.map(qa => - Question: ${qa.question}\n- Answer: ${qa.answer}).join('\n');
-            // state.manualInput is from the general button at the bottom
-            const manualInputSection = state.manualInput ? \n**Additional User-Provided Details:**\n${state.manualInput} : '';
+            const qasText = state.questionsAndAnswers.map(qa => `- Question: ${qa.question}\n- Answer: ${qa.answer}`).join('\n');
+            // state.manualInput is from the *general* button at the bottom
+            const manualInputSection = state.manualInput ? `\n**Additional User-Provided Details:**\n${state.manualInput}` : '';
 
             const instruction = `Your role is an expert prompt engineer. Your ONLY task is to synthesize the user's goal and their answers into a single, comprehensive, and detailed prompt ready for another AI model.
 You MUST NOT answer or fulfill the user's request yourself. You are building the prompt FOR them.
 The final output must ONLY be the generated prompt text, with no extra conversation, preamble, or explanations like "Here is your prompt:".
-*User's Initial Goal:*
+**User's Initial Goal:**
 ${state.userTopic}
-*User's Refinements (Questions & Answers):*
+**User's Refinements (Questions & Answers):**
 ${qasText}
 ${manualInputSection}
 Now, generate the final, copy-and-paste-ready prompt below.`;
@@ -538,7 +538,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
         dom.moreQuestionsBtn.addEventListener('click', askMoreQuestions);
 
-        // This is the handler for the general manual input button
+        // This is the handler for the *general* manual input button
         dom.addInputBtn.addEventListener('click', () => {
             dom.addInputBtn.style.display = 'none';
             const inputEl = document.createElement('div');
