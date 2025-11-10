@@ -1,4 +1,4 @@
-// api/generate.js - Final version using the Anthropic Claude API
+// api/generate.js - Final version using the Mistral AI API
 
 module.exports = async (req, res) => {
   // Set CORS headers
@@ -21,54 +21,50 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'A prompt is required.' });
   }
 
-  // IMPORTANT: The environment variable must be named CLAUDE_API_KEY in Vercel
-  const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
-  if (!CLAUDE_API_KEY) {
-    console.error('CLAUDE_API_KEY is not set in environment variables.');
+  // IMPORTANT: The environment variable must be named MISTRAL_API_KEY in Vercel
+  const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
+  if (!MISTRAL_API_KEY) {
+    console.error('MISTRAL_API_KEY is not set in environment variables.');
     return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  const API_URL = 'https://api.anthropic.com/v1/messages';
-  // We'll use Claude 3 Haiku - it's fast, smart, and cost-effective.
-  const MODEL_NAME = 'claude-3-haiku-20240307';
+  const API_URL = 'https://api.mistral.ai/v1/chat/completions';
+  const MODEL_NAME = 'open-mistral-7b'; // This corresponds to Mistral-7B-Instruct-v0.2
 
-  // Anthropic's payload structure is different from Mistral/OpenAI
+  // Mistral uses a payload structure similar to OpenAI's
   const payload = {
     model: MODEL_NAME,
-    system: systemInstruction || "You are a helpful assistant.", // System prompt is a top-level key
     messages: [
+      { role: 'system', content: systemInstruction || "You are a helpful assistant." },
       { role: 'user', content: prompt }
-    ],
-    max_tokens: 1024 // Set a reasonable limit
+    ]
   };
 
   try {
-    const claudeResponse = await fetch(API_URL, {
+    const mistralResponse = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Anthropic requires a version header
-        'anthropic-version': '2023-06-01',
-        // Anthropic uses 'x-api-key' for authorization, not 'Bearer'
-        'x-api-key': CLAUDE_API_KEY
+        // Mistral uses a Bearer token for authorization
+        'Authorization': Bearer ${MISTRAL_API_KEY} 
       },
       body: JSON.stringify(payload),
     });
 
-    const responseData = await claudeResponse.json();
+    const responseData = await mistralResponse.json();
 
-    if (!claudeResponse.ok) {
-      console.error('Claude API Error:', responseData);
-      const message = responseData?.error?.message || 'An unknown error occurred with the Claude API.';
-      return res.status(claudeResponse.status).json({ error: message, upstream: responseData });
+    if (!mistralResponse.ok) {
+      console.error('Mistral API Error:', responseData);
+      const message = responseData?.message || 'An unknown error occurred with the Mistral API.';
+      return res.status(mistralResponse.status).json({ error: message, upstream: responseData });
     }
 
-    // Safely extract the generated text from Claude's successful response
-    const text = responseData?.content?.[0]?.text;
+    // Safely extract the generated text from the successful response
+    const text = responseData?.choices?.[0]?.message?.content;
     if (typeof text === 'string') {
       return res.status(200).json({ text });
     } else {
-      console.error('Could not extract text from Claude response:', responseData);
+      console.error('Could not extract text from Mistral response:', responseData);
       return res.status(500).json({ error: 'Could not extract text from the AI response.' });
     }
 
