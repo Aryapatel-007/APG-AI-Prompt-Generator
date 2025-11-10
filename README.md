@@ -4,10 +4,10 @@ A minimal 3-step prompt generator UI hosted on Vercel with a serverless function
 
 ## Project Structure
 
-- index.html — Frontend UI (no build step required)
-- api/generate.js — Vercel Serverless Function calling Mistral with your server-side key
-- vercel.json — Configures Node.js runtime for serverless functions
-- package.json — Project metadata
+- `index.html` — Frontend UI (no build step required)
+- `api/generate.js` — Vercel Serverless Function calling Mistral with your server-side key
+- `vercel.json` — Configures Node.js runtime for serverless functions
+- `package.json` — Project metadata
 
 ## Requirements
 
@@ -18,15 +18,15 @@ A minimal 3-step prompt generator UI hosted on Vercel with a serverless function
 
 Set this in your Vercel project:
 
-- MISTRAL_API_KEY — Your Mistral API key
+- `MISTRAL_API_KEY` — Your Mistral API key
 
-You can also create a local .env (not committed) and set MISTRAL_API_KEY when using vercel dev.
+You can also create a local `.env` (not committed) and set `MISTRAL_API_KEY` when using `vercel dev`.
 
 ## Deployment (Vercel Dashboard)
 
 1. Create a new Vercel project and import this repository.
 2. In Project Settings → Environment Variables, add:
-   - MISTRAL_API_KEY = your-real-api-key
+   - `MISTRAL_API_KEY` = `your-real-api-key`
    - Scope: Production, Preview (and Development if needed)
 3. Deploy.
 
