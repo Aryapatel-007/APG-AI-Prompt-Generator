@@ -37,9 +37,8 @@
         .step-line { background-color: var(--border-color); }
         textarea, input, pre { background-color: var(--input-bg); color: var(--text-primary); }
 
-        /* --- ADDED: Toolbar Styles (Themed) --- */
         .attachment-toolbar {
-            position: relative; /* Key for positioning the menu */
+            position: relative;
             display: flex;
             align-items: center;
         }
@@ -61,28 +60,25 @@
         }
 
         .toolbar-btn:hover {
-            background-color: #333; /* Slightly lighter dark */
+            background-color: #333;
             color: var(--text-primary);
         }
 
         .options-menu {
             position: absolute;
-            bottom: 60px; /* Position it above the '+' button */
+            bottom: 60px;
             left: -10px;
-            
             display: flex;
             padding: 8px;
             background-color: var(--input-bg);
             border: 1px solid var(--border-color);
-            border-radius: 25px; /* Pill shape */
+            border-radius: 25px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-            
-            /* Start hidden and transition */
             opacity: 0;
             transform: translateY(10px);
             visibility: hidden;
             transition: all 0.2s ease-out;
-            z-index: 10; /* Ensure it's on top */
+            z-index: 10;
         }
 
         .options-menu.visible {
@@ -94,8 +90,6 @@
         .file-input {
             display: none;
         }
-        /* --- END: Added Toolbar Styles --- */
-
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
@@ -137,6 +131,7 @@
                             
                         </div>
                     </div>
+
                     <button id="step-1-btn" class="glow-button text-white font-semibold px-8 py-3 rounded-full mt-6" disabled>Continue</button>
                 </div>
 
@@ -237,17 +232,32 @@
             
             const previousQAs = state.questionsAndAnswers.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
             
-            const instruction = `You are a prompt engineering assistant. Your goal is to help a user refine their initial goal by asking clarifying questions.
-            
-            User's Goal: "${state.userTopic}"
-            
-            Previously asked questions and their answers:
-            ${previousQAs || 'None yet.'}
-            
-            Based on the goal and the conversation so far, ask the user ONE new, insightful question to better understand their needs. The question should build on previous answers if they exist.
-            
-            Return ONLY the text of the single question, with no preamble, numbering, or explanation.`;
-            
+            // --- MODIFIED BLOCK ---
+            // This instruction is now designed to ask broader, more varied questions.
+            const instruction = `You are an expert prompt engineering assistant. Your goal is to help a user refine their initial goal by asking a series of clarifying questions that cover many different aspects.
+
+User's Initial Goal: "${state.userTopic}"
+
+Previously asked questions and their answers:
+${previousQAs || 'None yet.'}
+
+**Your Task:**
+Ask the user ONE new, insightful question to better understand their needs.
+
+**CRITICAL RULE:** Do NOT just ask a follow-up to the *previous* question. You MUST pick a new, different angle or aspect of the user's goal that has not been covered by the previous questions.
+
+Consider asking about aspects like:
+- **Audience:** Who is the target audience? (e.g., "Who is this marketing campaign for?")
+- **Format:** What should the final output look like? (e.g., "Should this be a bulleted list, a professional email, or a script for a video?")
+- **Tone:** What is the desired tone or style? (e.g., "Should the tone be formal, casual, enthusiastic, or persuasive?")
+- **Key Details:** What specific information, names, or data must be included? (e.g., "What is the name of the new coffee brand?")
+- **Constraints:** What should be avoided? (e.g., "Are there any topics, words, or competitors we should not mention?")
+- **Scope:** How detailed should the response be? (e.g., "Are you looking for a high-level plan or a fully detailed campaign schedule?")
+
+Based on the conversation history, pick a new aspect and ask a single question.
+Return ONLY the text of the single question, with no preamble, numbering, or explanation.`;
+            // --- END MODIFIED BLOCK ---
+
             const questionText = await callApi("Generate the next question.", instruction);
 
             if (!questionText || questionText.startsWith("Error:")) {
@@ -299,6 +309,7 @@
             const qasText = state.questionsAndAnswers.map(qa => `- Question: ${qa.question}\n- Answer: ${qa.answer}`).join('\n');
             const manualInputSection = state.manualInput ? `\n**Additional User-Provided Details:**\n${state.manualInput}` : '';
 
+            // This instruction remains the same, as it's for the final synthesis.
             const instruction = `Your role is an expert prompt engineer. Your ONLY task is to synthesize the user's goal and their answers into a single, comprehensive, and detailed prompt ready for another AI model.
 
 You MUST NOT answer or fulfill the user's request yourself. You are building the prompt FOR them.
@@ -327,30 +338,25 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             }
         };
 
-        // --- ADDED: Toolbar JS ---
-        // Get the new toolbar elements
+        // --- Toolbar JS ---
         const toggleButton = document.getElementById('toggleBtn');
         const optionsMenu = document.getElementById('optionsMenu');
 
-        // 1. Toggle the menu when the '+' button is clicked
         toggleButton.addEventListener('click', (event) => {
-            event.stopPropagation(); // Stop click from bubbling to the document
+            event.stopPropagation();
             optionsMenu.classList.toggle('visible');
         });
 
-        // 2. Close the menu if you click anywhere else on the page
         document.addEventListener('click', () => {
             if (optionsMenu.classList.contains('visible')) {
                 optionsMenu.classList.remove('visible');
             }
         });
 
-        // 3. Stop the menu itself from closing when you click inside it
         optionsMenu.addEventListener('click', (event) => {
             event.stopPropagation();
         });
 
-        // 4. Handle the file selection (optional: add your logic here)
         const photoUpload = document.getElementById('photoUpload');
         const fileUpload = document.getElementById('fileUpload');
 
@@ -358,9 +364,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             const file = event.target.files[0];
             if (file) {
                 console.log('Photo selected:', file.name);
-                // You could add the file name to the text area, for example:
-                // dom.topicInput.value += `\n[Attached Photo: ${file.name}]`;
-                optionsMenu.classList.remove('visible'); // Hide menu after selection
+                optionsMenu.classList.remove('visible');
             }
         });
 
@@ -368,13 +372,10 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             const file = event.target.files[0];
             if (file) {
                 console.log('File selected:', file.name);
-                // dom.topicInput.value += `\n[Attached File: ${file.name}]`;
-                optionsMenu.classList.remove('visible'); // Hide menu after selection
+                optionsMenu.classList.remove('visible');
             }
         });
-        // --- END: Added Toolbar JS ---
-
-
+        
         // --- Event Listeners & Initialization ---
         const resetToStart = () => {
             state = { currentStep: 0, userTopic: '', questionsAndAnswers: [], questionCountTarget: 5, manualInput: '', generatedPrompt: '' };
@@ -406,7 +407,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
         });
 
         dom.addInputBtn.addEventListener('click', () => {
-            dom.addInputBtn.style.display = 'none'; // Hide button after clicking
+            dom.addInputBtn.style.display = 'none';
             const inputEl = document.createElement('div');
             inputEl.id = 'manual-input-div';
             inputEl.innerHTML = `
@@ -422,12 +423,11 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
         dom.generatePromptBtn.addEventListener('click', generatePrompt);
 
         dom.refineMoreBtn.addEventListener('click', () => {
-            // Go back to step 2 to ask more questions or add input
             state.currentStep = 1;
             dom.step2Title.textContent = "Refining your prompt...";
             dom.questionsContainer.innerHTML = '<div class="text-center text-green-400 p-3 bg-green-900/20 rounded-lg">You can now ask more questions or add manual details.</div>';
             dom.refineOptions.classList.remove('hidden');
-            dom.addInputBtn.style.display = 'inline-block'; // Show manual input btn again
+            dom.addInputBtn.style.display = 'inline-block';
             updateStepUI();
         });
 
