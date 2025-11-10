@@ -29,6 +29,7 @@
 
         .apg-gradient-text {
             background-image: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+            background-clip: text; /* standard */
             -webkit-background-clip: text;
             -moz-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -95,18 +96,8 @@
         <!-- Main Container -->
         <div class="w-full bg-surface-dark p-6 rounded-2xl border border-border-color">
             
-            <!-- Auth View -->
-            <div id="auth-view">
-                 <h3 class="text-2xl font-semibold mb-2">Get Started</h3>
-                 <p class="text-text-secondary mb-6">Connect your Google Account</p>
-                 <button id="connect-google-btn" class="glow-button text-white font-semibold px-8 py-3 rounded-full mt-4 flex items-center justify-center mx-auto gap-3">
-                    <svg class="w-5 h-5" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.641-3.219-11.331-7.962l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.927,34.551,44,27.938,44,20C44,22.659,43.862,21.35,43.611,20.083z"></path></svg>
-                    Connect with Google
-                 </button>
-            </div>
-
-            <!-- Tool View -->
-            <div id="tool-view" class="hidden">
+            <!-- Tool View (always visible) -->
+            <div id="tool-view">
                 <div class="flex items-center justify-center w-full mb-8">
                     <div class="step-item flex items-center text-text-secondary" id="step-1-indicator">
                         <div class="step-circle w-8 h-8 rounded-full bg-surface-dark border-2 border-border-color flex items-center justify-center font-bold">1</div>
@@ -154,9 +145,7 @@
     
     <script>
         const dom = {
-            authView: document.getElementById('auth-view'),
             toolView: document.getElementById('tool-view'),
-            connectGoogleBtn: document.getElementById('connect-google-btn'),
             stepIndicators: [document.getElementById('step-1-indicator'), document.getElementById('step-2-indicator'), document.getElementById('step-3-indicator')],
             stepContents: [document.getElementById('step-1-content'), document.getElementById('step-2-content'), document.getElementById('step-3-content')],
             step1Btn: document.getElementById('step-1-btn'),
@@ -171,24 +160,10 @@
 
         let currentStep = 0;
         let userTopic = '';
-        let userApiKey = ''; 
-
-        async function callGeminiAPI(prompt, systemInstruction) {
-            if (!userApiKey) {
-                 const key = prompt("Please enter your Gemini API Key for this session:");
-                 if (!key) {
-                     alert("API Key is required to proceed.");
-                     return null;
-                 }
-                 userApiKey = key;
-            }
-
-            const API_URL = https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${userApiKey};
-            
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
-            };
+        
+        async function callApi(prompt, systemInstruction) {
+            const API_URL = `/api/generate`; 
+            const payload = { prompt, systemInstruction };
 
             try {
                 const response = await fetch(API_URL, {
@@ -196,18 +171,24 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
                 if (!response.ok) {
-                    const errorBody = await response.json();
-                    console.error("API Error:", errorBody);
-                    return Error: ${errorBody.error.message};
+                    let errorBody = null;
+                    try { errorBody = await response.json(); } catch (_) {}
+                    console.error("API Error from backend:", errorBody || response.statusText);
+                    const upstream = errorBody?.upstream;
+                    const upstreamMsg = upstream?.error?.message || upstream?.raw;
+                    return `Error: ${errorBody?.error || response.statusText || 'An unknown error occurred.'}${upstreamMsg ? `\nUpstream: ${upstreamMsg}` : ''}`;
                 }
+
                 const data = await response.json();
-                return data.candidates[0].content.parts[0].text;
+                return data.text;
             } catch (error) {
-                console.error("Fetch Error:", error);
-                return "An error occurred while contacting the API.";
+                console.error("Fetch Error to backend:", error);
+                return "Error: Could not connect to the APG-AI server.";
             }
         }
+
 
         const updateStepUI = () => {
             dom.stepIndicators.forEach((indicator, index) => {
@@ -222,10 +203,10 @@
             dom.questionsContainer.innerHTML = '<div class="text-center text-text-secondary">APG is thinking...</div>';
             
             const systemInstruction = "You are a prompt engineering assistant. Based on the user's topic, ask them a few (between 2 and 5) insightful, clarifying questions to help build a better prompt. Return ONLY the questions, each on a new line, without any preamble or numbering.";
-            const questionsText = await callGeminiAPI(topic, systemInstruction);
+            const questionsText = await callApi(topic, systemInstruction);
 
             if (!questionsText || questionsText.startsWith("Error:")) {
-                dom.questionsContainer.innerHTML = <div class="text-center text-red-400">${questionsText || 'Failed to generate questions.'}</div>;
+                dom.questionsContainer.innerHTML = `<div class="text-center text-red-400">${questionsText || 'Failed to generate questions.'}</div>`;
                 return;
             }
             
@@ -246,7 +227,7 @@
             dom.step2Btn.disabled = true;
             dom.step2Btn.innerHTML = `
                 <div class="flex items-center justify-center gap-2">
-                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w-w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -256,22 +237,30 @@
             const questionsAndAnswers = Array.from(dom.questionsContainer.querySelectorAll('div')).map(div => {
                 const label = div.querySelector('label').textContent;
                 const answer = div.querySelector('input').value || 'Not specified.';
-                return - ${label}\n  - ${answer};
+                return `- ${label}\n  - ${answer}`;
             }).join('\n');
 
-            const finalPromptInstruction = `
-Based on the user's initial goal and their answers to the refining questions, create a final, comprehensive, and well-structured prompt. The prompt should be ready to be copied and pasted into any AI model. Do not include any preamble or explanation, just the final prompt itself.
+            // *** THE FINAL FIX IS HERE ***
+            // This instruction is now much stricter and more explicit.
+            const finalPromptInstruction = `Your role is an expert prompt engineer. Your ONLY task is to take the user's initial goal and their answers to refining questions, and rewrite them into a single, final, comprehensive prompt.
 
-*User's Initial Goal:*
+You MUST NOT answer the user's request yourself. You are to generate the prompt text only.
+
+For example, if the user's goal was "write a story about a dragon," your output should be a detailed prompt like "Write a short story in the fantasy genre about a young, misunderstood dragon who..." and NOT the story itself.
+
+The final output must ONLY be the generated prompt, with no extra conversation, preamble, or explanations.
+
+Here is the user's information:
+
+**User's Initial Goal:**
 ${userTopic}
 
-*User's Refinements:*
+**User's Refinements:**
 ${questionsAndAnswers}
 
-Generate the final prompt below.
-`;
+Now, generate the final, copy-and-paste-ready prompt below.`;
             
-            const refinedPrompt = await callGeminiAPI(finalPromptInstruction);
+            const refinedPrompt = await callApi(finalPromptInstruction, "You are a world-class prompt engineer who rewrites simple user goals into detailed, expert-level prompts for other AI models.");
 
             if (!refinedPrompt || refinedPrompt.startsWith("Error:")) {
                  dom.resultText.textContent = refinedPrompt || 'Failed to generate prompt.';
@@ -293,13 +282,6 @@ Generate the final prompt below.
             dom.step1Btn.disabled = true;
             updateStepUI();
         };
-
-        dom.connectGoogleBtn.addEventListener('click', () => {
-            console.log("Simulating OAuth flow...");
-            dom.authView.classList.add('hidden');
-            dom.toolView.classList.remove('hidden');
-            updateStepUI();
-        });
 
         dom.topicInput.addEventListener('input', () => {
             dom.step1Btn.disabled = dom.topicInput.value.trim() === '';
