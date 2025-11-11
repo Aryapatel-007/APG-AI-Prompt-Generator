@@ -94,10 +94,10 @@
 
     <nav class="w-full max-w-7xl mx-auto mb-8">
         <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <a href="homepage.html" class="text-2xl font-bold">
+            <a href="index.html" class="text-2xl font-bold">
                 <span class="text-blue-600">APG</span> <span class="text-slate-700">Generator</span>
             </a>
-            <a href="homepage.html" class="secondary-button !w-auto px-6">
+            <a href="index.html" class="secondary-button !w-auto px-6">
                 <i class="fa-solid fa-arrow-left mr-2"></i>Back to Home
             </a>
         </div>
@@ -550,7 +550,12 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             });
         });
 
-        dom.startOverBtn.addEventListener('click', resetToStart);
+        // This event listener must be attached to the correct "Start Over" button
+        // Let's find all buttons named "start-over-btn" and attach it
+        const startOverButtons = document.querySelectorAll('#start-over-btn');
+        startOverButtons.forEach(btn => {
+            btn.addEventListener('click', resetToStart);
+        });
 
         // --- Initial UI setup ---
         resetToStart();
