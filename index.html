@@ -65,7 +65,6 @@
             border-radius: 0.5rem; /* 8px */
         }
         
-        /* New Loader & Toolbar Styles */
         .toolbar-btn {
             display: flex;
             align-items: center;
@@ -85,7 +84,6 @@
             color: var(--text-primary);
         }
         
-        /* New Typing Loader (same as before) */
         @keyframes typing {
             from { width: 0 }
             to { width: 100% }
@@ -103,7 +101,6 @@
                        blink-caret .75s step-end infinite;
         }
         
-        /* Live Prompt Updating "Pulse" */
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
@@ -211,8 +208,6 @@
         };
 
         // --- Helper: Debounce ---
-        // Prevents API calls on *every* keystroke.
-        // Waits for the user to stop typing for 'delay' ms.
         function debounce(func, delay = 500) {
             let timeoutId;
             return (...args) => {
@@ -235,6 +230,8 @@
                 });
                 if (!response.ok) {
                     const errorBody = await response.json().catch(() => ({}));
+                    console.error("API Error from backend:", errorBody);
+                    // Return a user-friendly error string
                     return `Error: ${errorBody.error || response.statusText}`;
                 }
                 const data = await response.json();
@@ -365,13 +362,24 @@ User's Initial Goal: "${state.userTopic}"
 
             const questionText = await callApi("Generate 5 initial questions.", instruction);
 
+            // --- *** THIS IS THE BUG FIX *** ---
+            // Check for an error *before* trying to parse JSON
+            if (questionText.startsWith("Error:")) {
+                console.error("API Error during question load:", questionText);
+                showQuestionError(questionText);
+                dom.refineBtnContainer.classList.remove('hidden'); // Show button to try again
+                state.isRefined = false;
+                return; // Stop execution
+            }
+            // --- *** END BUG FIX *** ---
+
             let questions;
             try {
                 questions = JSON.parse(questionText);
                 if (!Array.isArray(questions) || questions.length === 0 || !questions.every(q => typeof q === 'string')) {
                     throw new Error('Invalid JSON array format.');
                 }
-            } catch (error)_ {
+            } catch (error) {
                 console.error("Failed to parse questions:", error, questionText);
                 showQuestionError("Error: Could not generate questions. The AI returned an invalid format. Please try again.");
                 dom.refineBtnContainer.classList.remove('hidden'); // Show button to try again
@@ -418,7 +426,7 @@ User's Initial Goal: "${state.userTopic}"
             updatePromptView(); // This will show the main placeholder
         };
 
-        // --- Voice Input (Speech Recognition) Logic (Unchanged) ---
+        // --- Voice Input (Speech Recognition) Logic ---
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = SpeechRecognition ? new SpeechRecognition() : null;
         let currentTargetInput = null; 
@@ -440,6 +448,7 @@ User's Initial Goal: "${state.userTopic}"
             };
 
             recognition.onerror = (event) => {
+                console.error("Speech recognition error", event.error);
                 if (currentTargetInput) {
                     currentTargetInput.closest('.relative').querySelector('.voice-btn i').className = 'fa-solid fa-microphone';
                 }
@@ -460,8 +469,10 @@ User's Initial Goal: "${state.userTopic}"
                 if (!target) return; 
 
                 if (currentTargetInput) {
+                    // If we are already recording (and clicked stop), stop
                     recognition.stop();
                 } else {
+                    // Otherwise, start a new recording
                     currentTargetInput = target;
                     recognition.start();
                     voiceBtn.querySelector('i').className = 'fa-solid fa-stop apg-gradient-text';
@@ -473,6 +484,7 @@ User's Initial Goal: "${state.userTopic}"
 
         } else {
             console.warn("Speech Recognition not supported by this browser.");
+            // Hide all voice buttons if the API is not available
             const style = document.createElement('style');
             style.innerHTML = `.voice-btn { display: none; }`;
             document.head.appendChild(style);
