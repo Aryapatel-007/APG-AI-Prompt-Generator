@@ -56,13 +56,22 @@
             cursor: pointer;
             font-size: 18px;
             color: var(--text-secondary);
+            /* --- MODIFIED: Added transform to transition --- */
             transition: all 0.2s ease;
         }
 
+        /* --- NEW: Pop effect on hover for toolbar buttons --- */
         .toolbar-btn:hover {
             background-color: #333;
             color: var(--text-primary);
+            transform: scale(1.1);
         }
+        
+        /* --- NEW: Rotate class for the toggle button --- */
+        .toolbar-btn.rotated {
+            transform: rotate(45deg);
+        }
+
 
         .options-menu {
             position: absolute;
@@ -90,6 +99,61 @@
         .file-input {
             display: none;
         }
+        
+        /* --- NEW: Animation Keyframes --- */
+
+        /* Animation for content blocks fading in */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Animation for questions sliding up and fading in */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Animation for the typing loader */
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: var(--primary-glow); }
+        }
+
+        /* --- NEW: Animation Classes --- */
+
+        /* Class to apply the fade-in animation */
+        .content-fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        /* Class for the staggered question items */
+        .question-item-animate {
+            /* Start hidden, animation will make it visible */
+            opacity: 0; 
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        /* Classes for the new typing loader */
+        .typing-loader {
+            display: inline-block;
+            overflow: hidden; /* Ensures the text is not visible until the animation */
+            white-space: nowrap; /* Keeps the text on a single line */
+            border-right: .15em solid var(--primary-glow); /* The typing caret */
+            animation: typing 2.5s steps(30, end) infinite,
+                       blink-caret .75s step-end infinite;
+        }
+
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
@@ -108,7 +172,7 @@
                     <div class="step-item flex items-center text-text-secondary" id="step-3-indicator"><div class="step-circle w-8 h-8 rounded-full bg-surface-dark border-2 border-border-color flex items-center justify-center font-bold">3</div><span class="step-text ml-3">Generate</span></div>
                 </div>
 
-                <div id="step-1-content">
+                <div id="step-1-content" class="content-fade-in">
                     <h3 class="text-2xl font-semibold mb-4">What's your topic or goal?</h3>
                     <div class="relative w-full">
                         <textarea id="topic-input" rows="5" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200" placeholder="e.g., A marketing campaign for a new coffee brand"></textarea>
@@ -140,7 +204,7 @@
                     <button id="step-1-btn" class="glow-button text-white font-semibold px-8 py-3 rounded-full mt-6" disabled>Continue</button>
                 </div>
 
-                <div id="step-2-content" class="hidden">
+                <div id="step-2-content" class="hidden content-fade-in">
                     <h3 id="step-2-title" class="text-2xl font-semibold mb-4">Refine your prompt.</h3>
                     <div id="questions-container" class="space-y-4 text-left"></div>
                     <div id="refine-options" class="hidden mt-6 space-x-2">
@@ -150,7 +214,7 @@
                     </div>
                 </div>
                 
-                <div id="step-3-content" class="hidden">
+                <div id="step-3-content" class="hidden content-fade-in">
                     <h3 class="text-2xl font-semibold mb-4">Your Generated Prompt</h3>
                     <div id="result-container" class="text-left">
                         <pre id="result-text" class="w-full p-4 rounded-lg overflow-x-auto whitespace-pre-wrap text-sm min-h-[16rem]"></pre>
@@ -216,14 +280,30 @@
             }
         }
 
-        // --- UI Update Logic (Unchanged) ---
+        // --- UI Update Logic (MODIFIED) ---
         const updateStepUI = () => {
             dom.stepIndicators.forEach((indicator, index) => indicator.classList.toggle('active', index === state.currentStep));
-            dom.stepContents.forEach((content, index) => content.classList.toggle('hidden', index !== state.currentStep));
+            dom.stepContents.forEach((content, index) => {
+                const isActive = index === state.currentStep;
+                content.classList.toggle('hidden', !isActive);
+                
+                // --- NEW: Add animation class when showing ---
+                if (isActive) {
+                    // Remove class to allow re-animation
+                    content.classList.remove('content-fade-in');
+                    // Use a tiny timeout to force browser to re-apply animation
+                    setTimeout(() => content.classList.add('content-fade-in'), 0);
+                }
+            });
         };
 
+        // --- MODIFIED: Uses new "typing" loader ---
         const showLoading = (container, message) => {
-            container.innerHTML = `<div class="text-center text-text-secondary">${message}</div>`;
+            container.innerHTML = `
+                <div class="text-center text-text-secondary">
+                    <span class="typing-loader">${message}</span>
+                </div>
+            `;
         };
 
         const showError = (container, message) => {
@@ -239,7 +319,7 @@
             state.currentStep = 1;
             updateStepUI();
             dom.refineOptions.classList.add('hidden');
-            showLoading(dom.questionsContainer, 'APG is preparing your refinement form...');
+            showLoading(dom.questionsContainer, 'APG is preparing your form...');
             
             const instruction = `You are an expert prompt engineering assistant. Your goal is to help a user refine their initial goal.
 User's Initial Goal: "${state.userTopic}"
@@ -263,12 +343,13 @@ User's Initial Goal: "${state.userTopic}"
             dom.step2Title.textContent = 'Refine your prompt.';
             dom.questionsContainer.innerHTML = ''; // Clear loading message
             
-            // Create the form
+            // --- MODIFIED: Create form with staggered animation ---
             questions.forEach((q, index) => {
                 const questionEl = document.createElement('div');
-                // --- NEW HTML STRUCTURE FOR FOLLOW-UPS & MANUAL INPUT ---
-                questionEl.className = 'question-item space-y-2 mb-4';
-                // --- MODIFIED: Added relative wrapper, pr-12, and voice button to input ---
+                questionEl.className = 'question-item space-y-2 mb-4 question-item-animate'; // Add base animation class
+                // --- NEW: Apply staggered delay ---
+                questionEl.style.animationDelay = `${index * 100}ms`; 
+
                 questionEl.innerHTML = `
                     <label for="q-${index}" class="block text-lg font-medium text-left">${q}</label>
                     <div class="relative w-full">
@@ -288,9 +369,9 @@ User's Initial Goal: "${state.userTopic}"
                     <div class="manual-input-container-specific ml-4 mt-2"></div>
                     <div class="follow-up-container ml-4 border-l-2 border-border-color pl-4 mt-2"></div>
                 `;
-                // --- END NEW HTML STRUCTURE ---
                 dom.questionsContainer.appendChild(questionEl);
             });
+            // --- END MODIFICATION ---
 
             dom.refineOptions.classList.remove('hidden');
             dom.addInputBtn.style.display = 'inline-block'; 
@@ -305,7 +386,8 @@ User's Initial Goal: "${state.userTopic}"
             const loadingEl = document.createElement('div');
             loadingEl.id = 'more-questions-loading';
             loadingEl.className = 'text-center text-text-secondary mt-4';
-            loadingEl.textContent = 'APG is thinking of more questions...';
+            // --- MODIFIED: Use typing loader ---
+            loadingEl.innerHTML = `<span class="typing-loader">APG is thinking...</span>`;
             dom.questionsContainer.appendChild(loadingEl);
 
             buildStateFromForm(); 
@@ -335,14 +417,15 @@ ${previousQAs || 'None yet.'}
                 return;
             }
 
-            // Append new questions to the form
+            // --- MODIFIED: Append new questions with animation ---
             const baseIndex = dom.questionsContainer.querySelectorAll('.question-item').length;
             newQuestions.forEach((q, index) => {
                 const newIndex = baseIndex + index;
                 const questionEl = document.createElement('div');
-                // --- ADDING NEW QUESTIONS WITH FULL CAPABILITIES ---
-                questionEl.className = 'question-item space-y-2 mb-4';
-                // --- MODIFIED: Added relative wrapper, pr-12, and voice button to input ---
+                questionEl.className = 'question-item space-y-2 mb-4 question-item-animate'; // Add animation class
+                // --- NEW: Apply staggered delay ---
+                questionEl.style.animationDelay = `${index * 100}ms`;
+
                 questionEl.innerHTML = `
                     <label for="q-${newIndex}" class="block text-lg font-medium text-left">${q}</label>
                     <div class="relative w-full">
@@ -362,20 +445,19 @@ ${previousQAs || 'None yet.'}
                     <div class="manual-input-container-specific ml-4 mt-2"></div>
                     <div class="follow-up-container ml-4 border-l-2 border-border-color pl-4 mt-2"></div>
                 `;
-                // --- END NEW STRUCTURE ---
                 dom.questionsContainer.appendChild(questionEl);
             });
+            // --- END MODIFICATION ---
             
             dom.refineOptions.classList.remove('hidden');
         };
 
         /**
          * Helper function to read all Q&As from the DOM inputs and update the state.
+         * (Unchanged)
          */
         const buildStateFromForm = () => {
             state.questionsAndAnswers = [];
-            // --- MODIFIED SELECTOR ---
-            // Select all inputs AND textareas that have a data-question attribute
             const inputs = dom.questionsContainer.querySelectorAll('input[type="text"][data-question], textarea[data-question]');
             
             inputs.forEach(input => {
@@ -385,31 +467,25 @@ ${previousQAs || 'None yet.'}
                 });
             });
 
-            // Also get *general* manual input
             const manualInput = document.getElementById('manual-input');
             state.manualInput = manualInput ? manualInput.value.trim() : '';
         };
 
         // --- NEW FUNCTION: Handles clicking the "Add manual input" button for a specific question ---
+        // (Unchanged)
         const handleSpecificManualInputClick = (event) => {
             if (!event.target.classList.contains('manual-input-btn-specific')) {
-                return; // Exit if not the correct button
+                return;
             }
 
             const btn = event.target;
             btn.disabled = true;
-
             const qIndex = btn.dataset.qIndex;
-            const mainInput = document.getElementById(`q-${qIndex}`); // Get the main input
-            const mainQuestionText = mainInput.dataset.question; // Get its question text
-            
-            // Find the container specific to this question item
+            const mainInput = document.getElementById(`q-${qIndex}`); 
+            const mainQuestionText = mainInput.dataset.question; 
             const manualInputContainer = btn.closest('.question-item').querySelector('.manual-input-container-specific');
-            
             const inputId = `q-${qIndex}-manual`;
 
-            // Add the textarea
-            // --- MODIFIED: Added relative wrapper, pr-12, and voice button to textarea ---
             manualInputContainer.innerHTML = `
                 <label for="${inputId}" class="block text-lg font-medium text-left text-text-secondary">Additional details for this question:</label>
                 <div class="relative w-full">
@@ -419,15 +495,13 @@ ${previousQAs || 'None yet.'}
                     </button>
                 </div>
             `;
-            
-            // Remove the button
             btn.remove();
         };
 
         // --- Handles clicking the "Add follow-up" button (Unchanged) ---
         const handleFollowUpClick = async (event) => {
             if (!event.target.classList.contains('follow-up-btn')) {
-                return; // Exit if the click wasn't on a follow-up button
+                return; 
             }
 
             const btn = event.target;
@@ -450,7 +524,6 @@ Return ONLY the text of the single follow-up question.`;
 
             if (followUpQuestionText && !followUpQuestionText.startsWith("Error:")) {
                 const followUpId = `q-${qIndex}-followup`;
-                // --- MODIFIED: Added relative wrapper, pr-12, and voice button to input ---
                 followUpContainer.innerHTML = `
                     <label for="${followUpId}" class="block text-lg font-medium text-left text-text-secondary">${followUpQuestionText}</label>
                     <div class="relative w-full">
@@ -460,28 +533,28 @@ Return ONLY the text of the single follow-up question.`;
                         </button>
                     </div>
                 `;
-                btn.remove(); // Remove the "Add follow-up" button after it's used
+                btn.remove(); 
             } else {
                 console.error("Failed to get follow-up:", followUpQuestionText);
-                btn.textContent = 'Add follow-up'; // Reset on error
+                btn.textContent = 'Add follow-up'; 
                 btn.disabled = false;
                 followUpContainer.innerHTML = `<span class="text-red-400 text-sm">Could not load question. Try again.</span>`;
                 setTimeout(() => { followUpContainer.innerHTML = ''; }, 3000);
             }
         };
 
-        // --- Step 3: Prompt Generation Logic (Unchanged) ---
-        // This function works as-is because buildStateFromForm() now collects all inputs
+        // --- Step 3: Prompt Generation Logic (MODIFIED) ---
         const generatePrompt = async () => {
-            state.currentStep = 2; // Keep UI on refine step while loading
-            updateStepUI();
+            state.currentStep = 2; // Keep UI on refine step
+            updateStepUI(); // This will just re-animate step 2
+            
+            // --- MODIFIED: Use typing loader ---
             showLoading(dom.questionsContainer, 'Generating your final prompt...');
             dom.refineOptions.classList.add('hidden');
             
-            buildStateFromForm(); // Collects all data from inputs and textareas
+            buildStateFromForm(); 
 
             const qasText = state.questionsAndAnswers.map(qa => `- Question: ${qa.question}\n- Answer: ${qa.answer}`).join('\n');
-            // state.manualInput is from the *general* button at the bottom
             const manualInputSection = state.manualInput ? `\n**Additional User-Provided Details:**\n${state.manualInput}` : '';
 
             const instruction = `Your role is an expert prompt engineer. Your ONLY task is to synthesize the user's goal and their answers into a single, comprehensive, and detailed prompt ready for another AI model.
@@ -502,26 +575,35 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             } else {
                 state.generatedPrompt = finalPrompt.trim();
                 dom.resultText.textContent = state.generatedPrompt;
-                state.currentStep = 2; 
+                state.currentStep = 2; // Move to the final step
                 updateStepUI();
             }
         };
 
-        // --- Toolbar JS (Unchanged) ---
+        // --- Toolbar JS (MODIFIED) ---
         const toggleButton = document.getElementById('toggleBtn');
         const optionsMenu = document.getElementById('optionsMenu');
+        
         toggleButton.addEventListener('click', (event) => {
             event.stopPropagation();
             optionsMenu.classList.toggle('visible');
+            // --- NEW: Toggle rotation class ---
+            toggleButton.classList.toggle('rotated');
         });
+        
         document.addEventListener('click', () => {
             if (optionsMenu.classList.contains('visible')) {
                 optionsMenu.classList.remove('visible');
+                // --- NEW: Remove rotation class ---
+                toggleButton.classList.remove('rotated');
             }
         });
+        
         optionsMenu.addEventListener('click', (event) => {
             event.stopPropagation();
         });
+        
+        // (File upload listeners unchanged)
         const photoUpload = document.getElementById('photoUpload');
         const fileUpload = document.getElementById('fileUpload');
         photoUpload.addEventListener('change', (event) => {
@@ -529,6 +611,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             if (file) {
                 console.log('Photo selected:', file.name);
                 optionsMenu.classList.remove('visible');
+                toggleButton.classList.remove('rotated'); // Reset button
             }
         });
         fileUpload.addEventListener('change', (event) => {
@@ -536,87 +619,67 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             if (file) {
                 console.log('File selected:', file.name);
                 optionsMenu.classList.remove('visible');
+                toggleButton.classList.remove('rotated'); // Reset button
             }
         });
 
         // --- NEW: Voice Input (Speech Recognition) Logic ---
-        
-        // 1. Check for browser support
+        // (Unchanged)
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-        let currentTargetInput = null; // This will hold the input field we're recording for
+        let currentTargetInput = null; 
 
         if (recognition) {
-            recognition.continuous = false; // Stop after the first phrase
+            recognition.continuous = false; 
             recognition.lang = 'en-US';
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
 
-            // 2. Handle the result
             recognition.onresult = (event) => {
-                // Get the transcript from the last result
                 const transcript = event.results[event.results.length - 1][0].transcript.trim();
                 
                 if (currentTargetInput) {
-                    // Append the transcript to the target input
                     currentTargetInput.value += (currentTargetInput.value.length > 0 ? ' ' : '') + transcript;
-                    
-                    // IMPORTANT: Manually trigger the 'input' event for the Step 1 textarea
-                    // This ensures its 'disabled' state updates correctly
                     if (currentTargetInput.id === 'topic-input') {
                         dom.topicInput.dispatchEvent(new Event('input'));
                     }
                 }
             };
 
-            // 3. Handle errors
             recognition.onerror = (event) => {
                 console.error("Speech recognition error", event.error);
                 if (currentTargetInput) {
-                    // Reset the button icon on error
                     currentTargetInput.closest('.relative').querySelector('.voice-btn i').className = 'fa-solid fa-microphone';
                 }
             };
 
-            // 4. Reset button when recognition ends
             recognition.onend = () => {
                 if (currentTargetInput) {
-                    // Reset the button icon when done
                     currentTargetInput.closest('.relative').querySelector('.voice-btn i').className = 'fa-solid fa-microphone';
-                    currentTargetInput = null; // We are no longer targeting an input
+                    currentTargetInput = null; 
                 }
             };
 
-            // 5. Create a main click handler function
             const handleVoiceInputClick = (event) => {
-                // Check if the click (or its parent) is a .voice-btn
                 const voiceBtn = event.target.closest('.voice-btn');
-                if (!voiceBtn) return; // Not a voice button click
+                if (!voiceBtn) return; 
 
-                // Find the associated input (textarea or input) within the same wrapper
                 const target = voiceBtn.closest('.relative').querySelector('textarea, input[type="text"]');
-                if (!target) return; // No input found
+                if (!target) return; 
 
                 if (currentTargetInput) {
-                    // If we are already recording, stop
                     recognition.stop();
                 } else {
-                    // Otherwise, start a new recording
                     currentTargetInput = target;
                     recognition.start();
-                    // Update button icon to show it's listening
                     voiceBtn.querySelector('i').className = 'fa-solid fa-stop apg-gradient-text';
                 }
             };
 
-            // 6. Add a single *delegated* listener to the body
-            // This will catch clicks on all current AND future .voice-btn elements
             document.body.addEventListener('click', handleVoiceInputClick);
 
         } else {
-            // Speech recognition not supported in this browser
             console.warn("Speech Recognition not supported by this browser.");
-            // Hide all voice buttons if the API is not available
             const style = document.createElement('style');
             style.innerHTML = `.voice-btn { display: none; }`;
             document.head.appendChild(style);
@@ -651,12 +714,14 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
         dom.moreQuestionsBtn.addEventListener('click', askMoreQuestions);
 
-        // This is the handler for the *general* manual input button
         dom.addInputBtn.addEventListener('click', () => {
             dom.addInputBtn.style.display = 'none';
             const inputEl = document.createElement('div');
             inputEl.id = 'manual-input-div';
-            // --- MODIFIED: Added relative wrapper, pr-12, and voice button to textarea ---
+            // --- MODIFIED: Added animation class ---
+            inputEl.className = 'question-item-animate';
+            inputEl.style.animationDelay = '0ms'; // Animate it in immediately
+
             inputEl.innerHTML = `
                 <label for="manual-input" class="block text-sm font-medium mt-4 mb-2 text-left">Add any other details that weren't covered:</label>
                 <div class="relative w-full">
@@ -674,6 +739,10 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
         dom.refineMoreBtn.addEventListener('click', () => {
             state.currentStep = 1;
             updateStepUI();
+            // --- NEW: Regenerate the question list (they are already in the DOM) ---
+            // This is a simple way to re-show the step 2 content.
+            // A more complex app might save the state of step 2.
+            // For now, we just show it.
         });
 
         dom.copyBtn.addEventListener('click', () => {
@@ -686,6 +755,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
         dom.startOverBtn.addEventListener('click', resetToStart);
 
         // --- NEW: Add the delegated event listeners ---
+        // (Unchanged)
         dom.questionsContainer.addEventListener('click', handleFollowUpClick);
         dom.questionsContainer.addEventListener('click', handleSpecificManualInputClick);
 
