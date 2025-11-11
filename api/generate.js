@@ -1,117 +1,75 @@
-// Vercel Serverless Function (Node.js) - Corrected for compatibility
-// This securely handles requests from the frontend using the USER'S API key.
+// api/generate.js - Final version using the Mistral AI API
 
-// Helper to read JSON body for Vercel Node serverless (when req.body is undefined)
-function readJsonBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', chunk => { data += chunk; });
-    req.on('end', () => {
-      if (!data) return resolve({});
-      try {
-        resolve(JSON.parse(data));
-      } catch (e) {
-        reject(e);
-      }
-    });
-    req.on('error', reject);
-  });
-}
-
-module.exports = async function handler(req, res) {
-  // Basic CORS (safe default; same-origin will also work)
+module.exports = async (req, res) => {
+  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
+  // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
 
-  // 1. Only allow POST requests
+  // Ensure the request method is POST
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  // 2. Parse body robustly across environments
-  let body = req.body;
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    try {
-      body = await readJsonBody(req);
-    } catch (e) {
-      console.error('Invalid JSON body:', e);
-      return res.status(400).json({ error: 'Invalid JSON body' });
-    }
+  const { prompt, systemInstruction } = req.body || {};
+  if (!prompt) {
+    return res.status(400).json({ error: 'A prompt is required.' });
   }
 
-  const { prompt, systemInstruction } = body || {};
-
-  // 3. Validate inputs
-  if (!prompt && !systemInstruction) {
-    return res.status(400).json({ error: 'Prompt or system instruction is required.' });
+  // IMPORTANT: The environment variable must be named MISTRAL_API_KEY in Vercel
+  const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
+  if (!MISTRAL_API_KEY) {
+    console.error('MISTRAL_API_KEY is not set in environment variables.');
+    return res.status(500).json({ error: 'Server misconfiguration: API key is missing.' });
   }
 
-  // Use a single server-side API key from environment (do NOT expose to client)
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  if (!GEMINI_API_KEY) {
-    console.error('GEMINI_API_KEY is not set in environment variables.');
-    return res.status(500).json({ error: 'Server misconfiguration: API key missing.' });
-  }
+  const API_URL = 'https://api.mistral.ai/v1/chat/completions';
+  const MODEL_NAME = 'open-mistral-7b'; // This corresponds to Mistral-7B-Instruct-v0.2
 
-  // Use header-based auth and gemini-2.0-flash model as per user's API usage example
-  const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-
+  // Mistral uses a payload structure similar to OpenAI's
   const payload = {
-    contents: [
-      {
-        role: 'user',
-        parts: [{ text: prompt || '' }],
-      },
-    ],
-    ...(systemInstruction
-      ? { systemInstruction: { parts: [{ text: systemInstruction }] } }
-      : {}),
+    model: MODEL_NAME,
+    messages: [
+      { role: 'system', content: systemInstruction || "You are a helpful assistant." },
+      { role: 'user', content: prompt }
+    ]
   };
 
   try {
-    // 4. Make the call to the official Gemini API
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-goog-api-key': GEMINI_API_KEY,
-    };
-    const geminiResponse = await fetch(API_URL, {
+    const mistralResponse = await fetch(API_URL, {
       method: 'POST',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        // Mistral uses a Bearer token for authorization
+        'Authorization': `Bearer ${MISTRAL_API_KEY}` 
+      },
       body: JSON.stringify(payload),
     });
 
-    const rawText = await geminiResponse.text();
-    let responseData = {};
-    try { responseData = rawText ? JSON.parse(rawText) : {}; } catch (e) {
-      responseData = { parse_error: true, raw: rawText };
+    const responseData = await mistralResponse.json();
+
+    if (!mistralResponse.ok) {
+      console.error('Mistral API Error:', responseData);
+      const message = responseData?.message || 'An unknown error occurred with the Mistral API.';
+      return res.status(mistralResponse.status).json({ error: message, upstream: responseData });
     }
 
-    if (!geminiResponse.ok) {
-      console.error('Gemini API Error:', responseData);
-      const status = geminiResponse.status || 500;
-      const message = (responseData && responseData.error && responseData.error.message)
-        ? responseData.error.message
-        : 'An error occurred with the Gemini API.';
-      return res.status(status).json({ error: message, upstream: responseData });
-    }
-
-    // 5. Safely extract text
-    const text = responseData?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (typeof text === 'string' && text.length > 0) {
+    // Safely extract the generated text from the successful response
+    const text = responseData?.choices?.[0]?.message?.content;
+    if (typeof text === 'string') {
       return res.status(200).json({ text });
+    } else {
+      console.error('Could not extract text from Mistral response:', responseData);
+      return res.status(500).json({ error: 'Could not extract text from the AI response.' });
     }
-    // Fall back to returning the whole response for debugging if no text present
-    return res.status(200).json({ text: '', raw: responseData });
+
   } catch (error) {
     console.error('Internal Serverless Function Error:', error);
-    return res.status(500).json({ error: 'An internal server error occurred on the backend.', details: String(error && error.message || error) });
+    return res.status(500).json({ error: 'An internal server error occurred.' });
   }
 };
-
-// Ensure compatibility with different import styles
-exports.default = module.exports;
