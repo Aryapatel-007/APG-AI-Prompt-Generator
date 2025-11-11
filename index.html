@@ -7,66 +7,87 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
     <style>
-        body { font-family: 'Roboto', sans-serif; background-color: #f8fafc; /* Tailwind 'slate-50' */ }
-        .nav-link { color: #334155; /* Tailwind 'slate-700' */ font-weight: 500; }
-        .nav-link:hover { color: #007AFF; }
-        .blue-button {
-            background-color: #007AFF;
-            color: white;
-            font-weight: 700;
+        :root {
+            --background-dark: #121212;
+            --surface-dark: #1E1E1E;
+            --input-bg: #2a2a2c;
+            --primary-glow: #A78BFA; /* Lavender */
+            --secondary-glow: #F472B6; /* Pink */
+            --text-primary: #EAEAEA;
+            --text-secondary: #A0A0A0;
+            --border-color: #333333;
+            --border-color-focus: var(--primary-glow);
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--background-dark); 
+            color: var(--text-primary); 
+        }
+        .apg-gradient-text { 
+            background-image: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow)); 
+            background-clip: text; -webkit-background-clip: text; color: transparent; 
+        }
+        .glow-button { 
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow)); 
+            transition: all 0.3s ease; 
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.3);
+            font-weight: 600;
             border-radius: 9999px;
             padding: 0.75rem 2rem;
-            transition: all 0.2s ease;
         }
-        .blue-button:hover { background-color: #0056b3; transform: scale(1.02); }
-        .secondary-button {
-            background-color: transparent;
-            color: #007AFF;
-            border: 2px solid #007AFF;
-            font-weight: 700;
+        .glow-button:hover { 
+            box-shadow: 0 0 25px rgba(167, 139, 250, 0.5); 
+            transform: scale(1.02); 
+        }
+        .secondary-button { 
+            background-color: var(--surface-dark); 
+            border: 1px solid var(--border-color); 
+            color: var(--text-primary); 
+            transition: all 0.2s ease;
+            font-weight: 600;
             border-radius: 9999px;
             padding: 0.75rem 2rem;
-            transition: all 0.2s ease;
         }
-        .secondary-button:hover { background-color: rgba(0, 122, 255, 0.1); }
-        .gradient-text {
-            background-image: linear-gradient(90deg, #007AFF, #0056b3);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
+        .secondary-button:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .nav-link { 
+            color: var(--text-secondary); 
+            font-weight: 500; 
+            transition: color 0.2s;
         }
+        .nav-link:hover { color: var(--text-primary); }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
 
-    <nav class="w-full bg-white border-b border-slate-200 sticky top-0 z-50">
+    <nav class="w-full bg-surface-dark border-b border-border-color sticky top-0 z-50">
         <div class="container mx-auto max-w-6xl px-4 py-4 flex justify-between items-center">
-            <a href="#" class="text-2xl font-bold gradient-text">APG</a>
+            <a href="#" class="text-2xl font-bold apg-gradient-text">APG</a>
             <div class="hidden md:flex items-center space-x-6">
                 <a href="#how-it-works" class="nav-link">How It Works</a>
                 <a href="#features" class="nav-link">Features</a>
-                <a href="generator.html" class="blue-button">Launch Tool</a>
+                <a href="generator.html" class="glow-button !px-6 !py-2">Launch Tool</a>
             </div>
             <div class="md:hidden">
-                <a href="generator.html" class="blue-button px-6 py-2">Launch</a>
+                <a href="generator.html" class="glow-button !px-6 !py-2">Launch</a>
             </div>
         </div>
     </nav>
 
     <main class="flex-grow">
-        <section class="w-full py-24 md:py-32 bg-white">
+        <section class="w-full py-24 md:py-32">
             <div class="container mx-auto max-w-6xl px-4 text-center">
-                <h1 class="text-5xl md:text-7xl font-black text-slate-900 mb-6">
-                    Create the perfect AI prompts, <span class="gradient-text">every time.</span>
+                <h1 class="text-5xl md:text-7xl font-bold text-text-primary mb-6">
+                    Create the perfect AI prompts, <span class="apg-gradient-text">every time.</span>
                 </h1>
-                <p class="text-xl md:text-2xl text-slate-600 max-w-3xl mx-auto mb-10">
+                <p class="text-xl md:text-2xl text-text-secondary max-w-3xl mx-auto mb-10">
                     Stop guessing. APG guides you through a simple 3-step process to turn your vague idea into a detailed, ready-to-use prompt for any AI.
                 </p>
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <a href="generator.html" class="blue-button">
+                    <a href="generator.html" class="glow-button">
                         <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Start Generating
                     </a>
                     <a href="#how-it-works" class="secondary-button">Learn More</a>
@@ -74,62 +95,62 @@
             </div>
         </section>
 
-        <section id="features" class="w-full py-20">
+        <section id="features" class="w-full py-20 bg-surface-dark border-y border-border-color">
             <div class="container mx-auto max-w-6xl px-4 text-center">
-                <h2 class="text-4xl font-bold text-slate-900 mb-4">Refinement is the Key</h2>
-                <p class="text-lg text-slate-600 mb-12">APG helps you think about the crucial details you're missing.</p>
+                <h2 class="text-4xl font-bold text-text-primary mb-4">Refinement is the Key</h2>
+                <p class="text-lg text-text-secondary mb-12">APG helps you think about the crucial details you're missing.</p>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
-                        <i class="fa-solid fa-users text-4xl text-blue-600 mb-4"></i>
-                        <h3 class="text-2xl font-bold text-slate-900 mb-3">Define Your Audience</h3>
-                        <p class="text-slate-600">Who is this for? A prompt for "investors" is vastly different from one for "teenagers".</p>
+                    <div class="bg-background-dark p-8 rounded-xl border border-border-color">
+                        <i class="fa-solid fa-users text-4xl apg-gradient-text mb-4"></i>
+                        <h3 class="text-2xl font-bold text-text-primary mb-3">Define Your Audience</h3>
+                        <p class="text-text-secondary">Who is this for? A prompt for "investors" is vastly different from one for "teenagers".</p>
                     </div>
-                    <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
-                        <i class="fa-solid fa-pen-nib text-4xl text-blue-600 mb-4"></i>
-                        <h3 class="text-2xl font-bold text-slate-900 mb-3">Set the Right Tone</h3>
-                        <p class="text-slate-600">Should the output be "formal," "witty," "enthusiastic," or "data-driven"?</s_p>
+                    <div class="bg-background-dark p-8 rounded-xl border border-border-color">
+                        <i class="fa-solid fa-pen-nib text-4xl apg-gradient-text mb-4"></i>
+                        <h3 class="text-2xl font-bold text-text-primary mb-3">Set the Right Tone</h3>
+                        <p class="text-text-secondary">Should the output be "formal," "witty," "enthusiastic," or "data-driven"?</p>
                     </div>
-                    <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
-                        <i class="fa-solid fa-list-check text-4xl text-blue-600 mb-4"></i>
-                        <h3 class="text-2xl font-bold text-slate-900 mb-3">Specify the Format</h3>
-                        <p class="text-slate-600">Ask for a "bulleted list," "a 5-part email sequence," or "a single paragraph summary."</p>
+                    <div class="bg-background-dark p-8 rounded-xl border border-border-color">
+                        <i class="fa-solid fa-list-check text-4xl apg-gradient-text mb-4"></i>
+                        <h3 class="text-2xl font-bold text-text-primary mb-3">Specify the Format</h3>
+                        <p class="text-text-secondary">Ask for a "bulleted list," "a 5-part email sequence," or "a single paragraph summary."</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="how-it-works" class="w-full py-20 bg-white">
+        <section id="how-it-works" class="w-full py-20">
             <div class="container mx-auto max-w-6xl px-4">
-                <h2 class="text-4xl font-bold text-slate-900 text-center mb-16">How It Works in 3 Simple Steps</h2>
+                <h2 class="text-4xl font-bold text-text-primary text-center mb-16">How It Works in 3 Simple Steps</h2>
                 <div class="flex flex-col md:flex-row justify-between items-center gap-8">
                     <div class="text-center flex-1">
-                        <span class="flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 font-bold text-2xl rounded-full mx-auto mb-4">1</span>
-                        <h3 class="text-2xl font-bold text-slate-900 mb-2">Set Your Goal</h3>
-                        <p class="text-slate-600">Start with your basic idea. (e.g., "An ad for my new coffee shop")</p>
+                        <span class="flex items-center justify-center w-16 h-16 bg-primary-glow text-background-dark font-bold text-2xl rounded-full mx-auto mb-4">1</span>
+                        <h3 class="text-2xl font-bold text-text-primary mb-2">Set Your Goal</h3>
+                        <p class="text-text-secondary">Start with your basic idea. (e.g., "An ad for my new coffee shop")</p>
                     </div>
                     
-                    <div class="w-1/4 h-1 bg-slate-200 rounded-full hidden md:block"></div>
+                    <div class="w-1/4 h-1 bg-border-color rounded-full hidden md:block"></div>
 
                     <div class="text-center flex-1">
-                        <span class="flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 font-bold text-2xl rounded-full mx-auto mb-4">2</span>
-                        <h3 class="text-2xl font-bold text-slate-900 mb-2">Refine with AI</h3>
-                        <p class="text-slate-600">APG asks you smart questions about audience, tone, format, and more.</p>
+                        <span class="flex items-center justify-center w-16 h-16 bg-primary-glow text-background-dark font-bold text-2xl rounded-full mx-auto mb-4">2</span>
+                        <h3 class="text-2xl font-bold text-text-primary mb-2">Refine with AI</h3>
+                        <p class="text-text-secondary">APG asks you smart questions about audience, tone, format, and more.</p>
                     </div>
                     
-                    <div class="w-1/4 h-1 bg-slate-200 rounded-full hidden md:block"></div>
+                    <div class="w-1/4 h-1 bg-border-color rounded-full hidden md:block"></div>
 
                     <div class="text-center flex-1">
-                        <span class="flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 font-bold text-2xl rounded-full mx-auto mb-4">3</span>
-                        <h3 class="text-2xl font-bold text-slate-900 mb-2">Generate Your Prompt</h3>
-                        <p class="text-slate-600">Get a detailed, copy-paste-ready prompt built from your answers.</p>
+                        <span class="flex items-center justify-center w-16 h-16 bg-primary-glow text-background-dark font-bold text-2xl rounded-full mx-auto mb-4">3</span>
+                        <h3 class="text-2xl font-bold text-text-primary mb-2">Generate Your Prompt</h3>
+                        <p class="text-text-secondary">Get a detailed, copy-paste-ready prompt built from your answers.</p>
                     </div>
                 </div>
             </div>
         </section>
     </main>
 
-    <footer class="w-full py-8 border-t border-slate-200">
-        <div class="container mx-auto max-w-6xl px-4 text-center text-slate-500">
+    <footer class="w-full py-8 border-t border-border-color">
+        <div class="container mx-auto max-w-6xl px-4 text-center text-text-secondary">
             &copy; 2025 APG-AI Prompt Generator. All rights reserved.
         </div>
     </footer>
