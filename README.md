@@ -37,8 +37,4 @@ npm i -g vercel
 vercel login
 vercel link
 vercel env add MISTRAL_API_KEY development
-<<<<<<< HEAD
 vercel dev
-=======
-vercel dev
->>>>>>> 5ba10e06f863f7db61d914b36765e9ffcfed26f7

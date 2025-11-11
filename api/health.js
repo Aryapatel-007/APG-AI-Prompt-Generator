@@ -26,8 +26,4 @@ module.exports = (req, res) => {
       MISTRAL_API_KEY: hasKey ? 'present' : 'missing' 
     } 
   });
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> 5ba10e06f863f7db61d914b36765e9ffcfed26f7

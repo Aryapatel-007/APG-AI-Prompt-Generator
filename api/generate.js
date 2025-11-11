@@ -72,8 +72,4 @@ module.exports = async (req, res) => {
     console.error('Internal Serverless Function Error:', error);
     return res.status(500).json({ error: 'An internal server error occurred.' });
   }
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> 5ba10e06f863f7db61d914b36765e9ffcfed26f7
