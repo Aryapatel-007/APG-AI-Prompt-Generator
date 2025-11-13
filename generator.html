@@ -125,7 +125,7 @@
                             </div>
                         </div>
 
-                        <button id="step-1-btn" class="glow-button !rounded-full text-white font-semibold px-8 py-3 mt-6 w-full" disabled>Continue</U>
+                        <button id="step-1-btn" class="glow-button !rounded-full text-white font-semibold px-8 py-3 mt-6 w-full" disabled>Continue</button>
                     </div>
 
                     <div id="step-2-content" class="hidden">
@@ -191,7 +191,7 @@
             stepIndicators: [
                 document.getElementById('step-1-indicator'), 
                 document.getElementById('step-2-indicator'),
-                document.getElementById('step-3-indicator') // Added Step 3 back
+                document.getElementById('step-3-indicator') 
             ],
             stepContents: [
                 document.getElementById('step-1-content'), 
@@ -248,20 +248,11 @@
         }
 
         // --- 4. UI Update Logic (Modified) ---
-
-        /**
-         * Controls the left panel (Steps 1 & 2)
-         */
         const updateStepUI = () => {
-            // Activate indicators for step 1 or 2
             dom.stepIndicators.forEach((indicator, index) => indicator.classList.toggle('active', index === state.currentStep));
-            
-            // Manually deactivate step 3 if we are on step 1 or 2
             if (state.currentStep < 2) {
                 dom.stepIndicators[2].classList.remove('active');
             }
-
-            // Show/hide page content
             dom.stepContents[0].classList.toggle('hidden', state.currentStep !== 0);
             dom.stepContents[1].classList.toggle('hidden', state.currentStep !== 1);
         };
@@ -281,13 +272,9 @@
         
         // --- 5. Core Logic (Modified) ---
 
-        /**
-         * Live-update function
-         */
         const updateLivePrompt = async () => {
             if (state.currentStep === 0) return;
 
-            // *** UI FIX ***: Activate Step 3 indicator
             dom.stepIndicators[2].classList.add('active'); 
             updatePreviewPanel('loading');
             
@@ -296,6 +283,7 @@
             const qasText = state.questionsAndAnswers.map(qa => `- Question: ${qa.question}\n- Answer: ${qa.answer}`).join('\n');
             const manualInputSection = state.manualInput ? `\n**Additional User-Provided Details:**\n${state.manualInput}` : '';
 
+            // This is the instruction for the *final prompt*
             const instruction = `Your role is an expert prompt engineer. Your ONLY task is to synthesize the user's goal and their answers into a single, comprehensive, and detailed prompt ready for another AI model.
 You MUST NOT answer or fulfill the user's request yourself. You are building the prompt FOR them.
 The final output must ONLY be the generated prompt text, with no extra conversation, preamble, or explanations.
@@ -313,7 +301,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
                 updatePreviewPanel('result');
             } else {
                 state.generatedPrompt = finalPrompt.trim();
-                dom.resultText.textContent = state.generatedPrompt;
+                dom.resultText.textContent = finalPrompt.trim();
                 updatePreviewPanel('result');
             }
         };
@@ -327,14 +315,19 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             dom.refineOptions.classList.add('hidden');
             showLoading(dom.questionsContainer, 'APG is preparing your refinement form...');
             
-            const instruction = `...[omitted for brevity]...**Return ONLY a JSON array of 5 strings**...`;
+            // *** BUG FIX: Stricter Instruction ***
+            const instruction = `You are an expert prompt engineering assistant. Your goal is to help a user refine their initial goal.
+User's Initial Goal: "${state.userTopic}"
+**Your Task:** Generate 5 insightful, clarifying questions to ask the user.
+**Your response MUST be ONLY the raw JSON array.** Do not include any other text, pre-amble, or markdown. Your response must start with [ and end with ].`;
+
             const questionText = await callApi("Generate 5 initial questions.", instruction);
 
-            // *** BUG FIX ***: Check for error *before* parsing
+            // *** BUG FIX: Check for error *before* parsing ***
             if (questionText.startsWith("Error:")) {
                 console.error("API Error during question load:", questionText);
                 showError(dom.questionsContainer, questionText);
-                return;
+                return; // Stop execution
             }
 
             let questions;
@@ -344,7 +337,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
                     throw new Error('Invalid JSON array format.');
                 }
             } catch (error) {
-                console.error("Failed to parse questions:", error, questionText);
+                console.error("Failed to parse questions:", error, questionText); // Log the bad response
                 showError(dom.questionsContainer, "Error: Could not generate questions. The AI returned an invalid format. Please try again.");
                 return;
             }
@@ -352,7 +345,6 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             dom.step2Title.textContent = 'Refine your prompt.';
             dom.questionsContainer.innerHTML = ''; // Clear loading
             
-            // This is your original HTML for the questions
             questions.forEach((q, index) => {
                 const questionEl = document.createElement('div');
                 questionEl.className = 'question-item space-y-2 mb-4';
@@ -397,12 +389,19 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
             buildStateFromForm(); 
             const previousQAs = state.questionsAndAnswers.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
-            const instruction = `...[omitted for brevity]...**Return ONLY a JSON array of 3 strings**...`;
+            
+            // *** BUG FIX: Stricter Instruction ***
+            const instruction = `You are an expert prompt assistant. A user is refining a goal.
+User's Goal: "${state.userTopic}"
+Previously asked questions and answers:
+${previousQAs || 'None yet.'}
+**Your Task:** Ask 3 *new*, *different* questions that haven't been covered.
+**Your response MUST be ONLY the raw JSON array.** Do not include any other text, pre-amble, or markdown. Your response must start with [ and end with ].`;
+
             const questionText = await callApi("Generate 3 more questions.", instruction);
             document.getElementById('more-questions-loading').remove();
 
-            // *** BUG FIX HERE ***
-            // Check for an API error *before* trying to parse.
+            // *** BUG FIX: Check for error *before* parsing ***
             if (questionText.startsWith("Error:")) {
                 alert(questionText); // Show the actual error
                 dom.refineOptions.classList.remove('hidden');
@@ -416,7 +415,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
                     throw new Error('Invalid JSON format.'); 
                 }
             } catch (error) {
-                // This catch block is for JSON.parse errors (chattiness)
+                console.error("Failed to parse new questions:", error, questionText); // Log the bad response
                 alert('Could not generate more questions. The AI returned an invalid format.');
                 dom.refineOptions.classList.remove('hidden');
                 return;
@@ -466,7 +465,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             state.manualInput = manualInput ? manualInput.value.trim() : '';
         };
 
-        // --- Per-question button handlers (Unchanged) ---
+        // --- Per-question button handlers (Bug Fix) ---
         const handleSpecificManualInputClick = (event) => {
             if (!event.target.classList.contains('manual-input-btn-specific')) { return; }
             const btn = event.target;
@@ -498,12 +497,18 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             const mainQuestionText = mainInput.dataset.question;
             const mainAnswerValue = mainInput.value.trim();
             const followUpContainer = btn.closest('.question-item').querySelector('.follow-up-container');
-            const instruction = `...[omitted for brevity]...Return ONLY the text of the single follow-up question.`;
+            
+            // *** BUG FIX: Stricter Instruction ***
+            const instruction = `You are a helpful assistant. The user's main goal is "${state.userTopic}".
+The main question you just asked was: "${mainQuestionText}"
+The user's answer to that question is: "${mainAnswerValue || '(No answer yet)'}"
+Based on this, ask ONE single, concise, relevant follow-up question to get more detail.
+**Your response MUST be ONLY the raw text of the question itself.** Do not include any other text, pre-amble, or quotes.`;
             
             const followUpQuestionText = await callApi("Generate a follow-up question.", instruction);
 
-            // *** BUG FIX ***: Check for error *before* parsing
-            if (followUpQuestionText.startsWith("Error:")) {
+            // *** BUG FIX: Check for error ***
+            if (!followUpQuestionText || followUpQuestionText.startsWith("Error:")) {
                 console.error("Failed to get follow-up:", followUpQuestionText);
                 btn.textContent = 'Add follow-up'; 
                 btn.disabled = false;
@@ -512,23 +517,18 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
                 return;
             }
 
-            if (followUpQuestionText) {
-                const followUpId = `q-${qIndex}-followup`;
-                followUpContainer.innerHTML = `
-                    <label for="${followUpId}" class="block text-lg font-medium text-left text-text-secondary">${followUpQuestionText}</label>
-                    <div class="relative w-full">
-                        <input type="text" id="${followUpId}" data-question="${followUpQuestionText}" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200 mt-2" placeholder="Your answer...">
-                        <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;" title="Voice Input">
-                            <i class="fa-solid fa-microphone"></i>
-                        </button>
-                    </div>
-                `;
-                btn.remove(); 
-            } else {
-                // This block will likely not be reached due to the error check above, but it's good practice
-                btn.textContent = 'Add follow-up'; 
-                btn.disabled = false;
-            }
+            // Success
+            const followUpId = `q-${qIndex}-followup`;
+            followUpContainer.innerHTML = `
+                <label for="${followUpId}" class="block text-lg font-medium text-left text-text-secondary">${followUpQuestionText}</label>
+                <div class="relative w-full">
+                    <input type="text" id="${followUpId}" data-question="${followUpQuestionText}" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200 mt-2" placeholder="Your answer...">
+                    <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;" title="Voice Input">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                </div>
+            `;
+            btn.remove(); 
         };
 
         // --- 7. Toolbar & Voice JS (Unchanged) ---
@@ -605,7 +605,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
             updateStepUI(); 
             updatePreviewPanel('placeholder');
-            dom.stepIndicators[2].classList.remove('active'); // Deactivate step 3
+            dom.stepIndicators[2].classList.remove('active');
         };
 
         dom.topicInput.addEventListener('input', () => {
@@ -642,10 +642,8 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             dom.questionsContainer.appendChild(inputEl);
         });
         
-        // Main live update listener
         dom.questionsContainer.addEventListener('input', debouncedUpdateLivePrompt);
 
-        // Result Panel Listeners
         dom.copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(dom.resultText.textContent).then(() => {
                 dom.copyText.textContent = 'Copied!';
@@ -654,11 +652,9 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
         });
         dom.startOverBtn.addEventListener('click', resetToStart);
 
-        // Delegated listeners for per-question buttons
         dom.questionsContainer.addEventListener('click', handleFollowUpClick);
         dom.questionsContainer.addEventListener('click', handleSpecificManualInputClick);
 
-        // Initial UI setup
         resetToStart();
     </script>
 </body>
