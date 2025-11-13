@@ -201,24 +201,23 @@
                                 <div id="result-buttons" class="hidden">
                                     <button id="copy-btn" class="absolute top-2 right-2 p-2 rounded-lg bg-input-bg text-text-secondary hover:text-text-primary transition-all z-10" title="Copy to clipboard">
                                         <i class="fa-solid fa-clipboard"></i>
-                                        <span id="copy-text" class="hidden absolute -top-8 right-0 bg-primary-glow text-background-dark px-2 py-1 rounded text-sm whitespace-nowrap">Copied!</span>
+                                        <span id="copy-text" class="hidden absolute -top-8 right-0 bg-primary-glow text-background-dark px-2 py-1 rounded text-sm whitespace-Dnowrap">Copied!</span>
                                     </button>
                                     <div class="flex flex-col gap-4 mt-6 flex-shrink-0">
                                         <button id="refine-more-btn" class="secondary-button !rounded-full font-semibold px-8 py-3 w-full">Refine More</button>
                                         <button id="start-over-btn" class="secondary-button !rounded-full font-semibold px-8 py-3 w-full !border-red-500/30 hover:!bg-red-500/10 hover:!border-red-500/50">Start Over</button>
                                     </div>
                                 </div>
-                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
     
     <script>
-        // --- 1. DOM Elements (resultButtons added) ---
+        // --- 1. DOM Elements (Unchanged) ---
         const dom = {
             stepIndicators: [document.getElementById('step-1-indicator'), document.getElementById('step-2-indicator'), document.getElementById('step-3-indicator')],
             stepContents: [document.getElementById('step-1-content'), document.getElementById('step-2-content'), document.getElementById('step-3-content')],
@@ -232,13 +231,13 @@
             generatePromptBtn: document.getElementById('generate-prompt-btn'),
             resultText: document.getElementById('result-text'),
             copyBtn: document.getElementById('copy-btn'),
-            copyText: document.getElementById('copy-text'), // This is the tooltip
+            copyText: document.getElementById('copy-text'),
             refineMoreBtn: document.getElementById('refine-more-btn'),
             startOverBtn: document.getElementById('start-over-btn'),
             previewPlaceholder: document.getElementById('preview-placeholder'),
             previewLoading: document.getElementById('preview-loading'),
             previewResult: document.getElementById('preview-result'),
-            resultButtons: document.getElementById('result-buttons') // NEW
+            resultButtons: document.getElementById('result-buttons')
         };
 
         // --- 2. State (Unchanged) ---
@@ -273,19 +272,14 @@
             }
         }
 
-        // --- 4. UI Update Logic (MODIFIED) ---
-
-        const updateStepUI = () => { // Unchanged
+        // --- 4. UI Update Logic (Unchanged from last time) ---
+        const updateStepUI = () => {
             dom.stepIndicators.forEach((indicator, index) => indicator.classList.toggle('active', index === state.currentStep));
             dom.stepContents[0].classList.toggle('hidden', state.currentStep !== 0);
             dom.stepContents[1].classList.toggle('hidden', state.currentStep !== 1);
             dom.stepContents[2].classList.add('hidden'); 
         };
         
-        /**
-         * MODIFIED function to control the right-hand preview panel
-         * @param {'placeholder' | 'loading' | 'live' | 'result'} view
-         */
         const updatePreviewPanel = (view) => {
             dom.previewPlaceholder.classList.toggle('hidden', view !== 'placeholder');
             dom.previewLoading.classList.toggle('hidden', view !== 'loading');
@@ -300,18 +294,22 @@
             }
         };
 
-        // --- NEW: Live Preview Builder ---
+        // --- 5. Live Preview Builder (Corrected) ---
+        /**
+         * This function builds the preview string and returns true/false if there is content.
+         */
         const updateLivePreview = () => {
             let preview = '';
             const topic = dom.topicInput.value.trim();
             
-            if (!topic) {
-                preview = 'Start by typing your goal in the box on the left...';
-                dom.resultText.textContent = preview;
-                return;
+            let hasContent = false;
+            
+            if (topic) {
+                preview = `**User's Initial Goal:**\n${topic}\n\n`;
+                hasContent = true;
+            } else {
+                preview = `**User's Initial Goal:**\n(No goal specified yet.)\n\n`;
             }
-
-            preview = `**User's Initial Goal:**\n${topic}\n\n`;
             
             const inputs = dom.questionsContainer.querySelectorAll('input[type="text"][data-question], textarea[data-question]');
             let qasText = '';
@@ -327,6 +325,7 @@
 
             if (hasAnswers) {
                 preview += `**User's Refinements:**\n${qasText}\n`;
+                hasContent = true;
             }
 
             const manualInput = document.getElementById('manual-input');
@@ -334,23 +333,22 @@
             
             if (manualText) {
                 preview += `**Additional User-Provided Details:**\n${manualText}`;
+                hasContent = true;
             }
-
+            
             dom.resultText.textContent = preview;
+            return hasContent; // Return if any text was actually added
         };
 
-
-        const showLoading = (container, message) => { // Unchanged
+        // (Loading/Error functions unchanged)
+        const showLoading = (container, message) => {
             container.innerHTML = `<div class="text-center text-text-secondary">${message}</div>`;
         };
-        const showError = (container, message) => { // Unchanged
+        const showError = (container, message) => {
             container.innerHTML = `<div class="text-center text-red-400 p-4 bg-red-900/20 rounded-lg">${message}</div>`;
         };
         
-        // --- 5. Step 2: Question Logic (Unchanged) ---
-        // All functions (loadInitialQuestions, askMoreQuestions, buildStateFromForm,
-        // handleSpecificManualInputClick, handleFollowUpClick) are IDENTICAL to your file.
-        // I am omitting them here for brevity, but they are unchanged.
+        // --- 6. Step 2: Question Logic (Unchanged from your file) ---
         const loadInitialQuestions = async () => {
             state.currentStep = 1;
             updateStepUI(); 
@@ -527,10 +525,10 @@ Return ONLY the text of the single follow-up question.`;
             }
         };
 
-        // --- 6. Step 3: Prompt Generation Logic (MODIFIED) ---
+        // --- 7. Step 3: Prompt Generation Logic (Unchanged) ---
         const generatePrompt = async () => {
             dom.stepIndicators[2].classList.add('active');
-            updatePreviewPanel('loading'); // Show loading
+            updatePreviewPanel('loading');
             dom.refineOptions.classList.add('hidden');
             buildStateFromForm(); 
             const qasText = state.questionsAndAnswers.map(qa => `- Question: ${qa.question}\n- Answer: ${qa.answer}`).join('\n');
@@ -544,23 +542,25 @@ ${state.userTopic}
 ${qasText}
 ${manualInputSection}
 Now, generate the final, copy-and-paste-ready prompt below.`;
-
             const finalPrompt = await callApi("Synthesize the information into a final prompt.", instruction);
-            
             if (!finalPrompt || finalPrompt.startsWith("Error:")) {
                 showError(dom.questionsContainer, finalPrompt);
-                updatePreviewPanel('live'); // Go back to 'live' view on error
+                // --- Bugfix ---
+                // updatePreviewPanel('live'); // Go back to 'live' view on error
+                // This was a bug. We need to repopulate the live view
+                const hasContent = updateLivePreview();
+                updatePreviewPanel(hasContent ? 'live' : 'placeholder');
+                
                 dom.refineOptions.classList.remove('hidden');
                 dom.stepIndicators[2].classList.remove('active'); 
             } else {
                 state.generatedPrompt = finalPrompt.trim();
-                dom.resultText.textContent = state.generatedPrompt; // Populate final prompt
-                updatePreviewPanel('result'); // Show final prompt AND buttons
+                dom.resultText.textContent = state.generatedPrompt;
+                updatePreviewPanel('result');
             }
         };
 
-        // --- 7. Toolbar & Voice JS (Unchanged) ---
-        // This code is identical to your file.
+        // --- 8. Toolbar & Voice JS (Unchanged) ---
         const toggleButton = document.getElementById('toggleBtn');
         const optionsMenu = document.getElementById('optionsMenu');
         toggleButton.addEventListener('click', (event) => { event.stopPropagation(); optionsMenu.classList.toggle('visible'); });
@@ -579,9 +579,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
                 const transcript = event.results[event.results.length - 1][0].transcript.trim();
                 if (currentTargetInput) {
                     currentTargetInput.value += (currentTargetInput.value.length > 0 ? ' ' : '') + transcript;
-                    // --- MODIFICATION ---
-                    // Manually trigger the 'input' event so the live preview updates
-                    currentTargetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    currentTargetInput.dispatchEvent(new Event('input', { bubbles: true })); // Trigger live update
                 }
             };
             recognition.onerror = (event) => {
@@ -612,7 +610,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             document.head.appendChild(style);
         }
         
-        // --- 8. Event Listeners & Init (MODIFIED) ---
+        // --- 9. Event Listeners & Init (Corrected) ---
         const resetToStart = () => {
             state = { currentStep: 0, userTopic: '', questionsAndAnswers: [], manualInput: '', generatedPrompt: '' };
             dom.topicInput.value = '';
@@ -625,8 +623,7 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             dom.addInputBtn.style.display = 'inline-block';
 
             updateStepUI(); 
-            updatePreviewPanel('live'); // Show the live preview panel
-            updateLivePreview(); // Populate it with placeholder text
+            updatePreviewPanel('placeholder'); // <-- FIX: Start with placeholder
             dom.stepIndicators[2].classList.remove('active'); 
         };
 
@@ -661,13 +658,15 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
         dom.generatePromptBtn.addEventListener('click', generatePrompt);
 
         dom.refineMoreBtn.addEventListener('click', () => {
-            updatePreviewPanel('live'); // Go back to live view
-            updateLivePreview(); // Re-populate live view
+            // --- FIX ---
+            const hasContent = updateLivePreview(); // Re-populate live view
+            updatePreviewPanel(hasContent ? 'live' : 'placeholder'); // Go back to correct view
+            
             dom.refineOptions.classList.remove('hidden');
             dom.stepIndicators[2].classList.remove('active'); 
         });
 
-        dom.copyBtn.addEventListener('click', () => { // Unchanged logic
+        dom.copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(dom.resultText.textContent).then(() => {
                 dom.copyText.classList.remove('hidden'); 
                 const copyIcon = dom.copyBtn.querySelector('i');
@@ -682,27 +681,30 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
 
         dom.startOverBtn.addEventListener('click', resetToStart);
 
-        // Your original delegated listeners (Unchanged)
         dom.questionsContainer.addEventListener('click', handleFollowUpClick);
         dom.questionsContainer.addEventListener('click', handleSpecificManualInputClick);
 
-        // --- NEW: Global Input Listener for Live Preview ---
+        // --- NEW: Global Input Listener for Live Preview (Corrected) ---
         document.body.addEventListener('input', (event) => {
+            // Check if the input is one of our text fields
             if (event.target.id === 'topic-input' || 
                 event.target.id === 'manual-input' ||
                 event.target.matches('[data-question]')) {
                 
-                // Only update if we are in the 'live' state
-                // (i.e., resultButtons are hidden)
-                if (dom.resultButtons.classList.contains('hidden')) {
-                    if (!dom.previewPlaceholder.classList.contains('hidden')) {
-                        updatePreviewPanel('live');
+                // Only update if we are not in the 'result' or 'loading' state
+                if (dom.resultButtons.classList.contains('hidden') && 
+                    dom.previewLoading.classList.contains('hidden')) {
+                    
+                    const hasContent = updateLivePreview(); // Build the text & check if content exists
+                    
+                    if (hasContent) {
+                        updatePreviewPanel('live'); // Show the panel
+                    } else {
+                        updatePreviewPanel('placeholder'); // Hide panel, show placeholder
                     }
-                    updateLivePreview();
                 }
             }
         });
-
 
         // Initial UI setup
         resetToStart();
