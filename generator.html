@@ -90,10 +90,13 @@
         <div class="md:col-span-3">
             <div class="w-full bg-surface-dark p-6 rounded-2xl border border-border-color">
                 <div id="tool-view">
+                    
                     <div class="flex items-center justify-center w-full mb-8">
                         <div class="step-item flex items-center text-text-secondary" id="step-1-indicator"><div class="step-circle w-8 h-8 rounded-full bg-surface-dark border-2 border-border-color flex items-center justify-center font-bold">1</div><span class="step-text ml-3">Goal</span></div>
                         <div class="step-line flex-grow h-0.5 mx-4"></div>
-                        <div class="step-item flex items-center text-text-secondary" id="step-2-indicator"><div class="step-circle w-8 h-8 rounded-full bg-surface-dark border-2 border-border-color flex items-center justify-center font-bold">2</div><span class="step-text ml-3">Refine & Generate</span></div>
+                        <div class="step-item flex items-center text-text-secondary" id="step-2-indicator"><div class="step-circle w-8 h-8 rounded-full bg-surface-dark border-2 border-border-color flex items-center justify-center font-bold">2</div><span class="step-text ml-3">Refine</span></div>
+                        <div class="step-line flex-grow h-0.5 mx-4"></div>
+                        <div class="step-item flex items-center text-text-secondary" id="step-3-indicator"><div class="step-circle w-8 h-8 rounded-full bg-surface-dark border-2 border-border-color flex items-center justify-center font-bold">3</div><span class="step-text ml-3">Generate</span></div>
                     </div>
 
                     <div id="step-1-content">
@@ -122,7 +125,7 @@
                             </div>
                         </div>
 
-                        <button id="step-1-btn" class="glow-button !rounded-full text-white font-semibold px-8 py-3 mt-6 w-full" disabled>Continue</button>
+                        <button id="step-1-btn" class="glow-button !rounded-full text-white font-semibold px-8 py-3 mt-6 w-full" disabled>Continue</U>
                     </div>
 
                     <div id="step-2-content" class="hidden">
@@ -173,10 +176,6 @@
     
     <script>
         // --- 0. Debounce Helper Function ---
-        /**
-         * Prevents a function from running too often.
-         * Waits 'delay' ms after the last time it was called.
-         */
         function debounce(func, delay = 500) {
             let timeoutId;
             return (...args) => {
@@ -187,12 +186,12 @@
             };
         }
 
-        // --- 1. DOM Elements ---
+        // --- 1. DOM Elements (Modified) ---
         const dom = {
             stepIndicators: [
                 document.getElementById('step-1-indicator'), 
-                document.getElementById('step-2-indicator')
-                // Step 3 indicator is removed
+                document.getElementById('step-2-indicator'),
+                document.getElementById('step-3-indicator') // Added Step 3 back
             ],
             stepContents: [
                 document.getElementById('step-1-content'), 
@@ -205,12 +204,10 @@
             refineOptions: document.getElementById('refine-options'),
             addInputBtn: document.getElementById('add-input-btn'),
             moreQuestionsBtn: document.getElementById('more-questions-btn'),
-            // 'generatePromptBtn' is removed
             
             resultText: document.getElementById('result-text'),
             copyBtn: document.getElementById('copy-btn'),
             copyText: document.getElementById('copy-text'),
-            // 'refineMoreBtn' is removed
             startOverBtn: document.getElementById('start-over-btn'),
             
             previewPlaceholder: document.getElementById('preview-placeholder'),
@@ -218,7 +215,7 @@
             previewResult: document.getElementById('preview-result'),
         };
 
-        // --- 2. State ---
+        // --- 2. State (Unchanged) ---
         let state = {
             currentStep: 0,
             userTopic: '',
@@ -256,14 +253,19 @@
          * Controls the left panel (Steps 1 & 2)
          */
         const updateStepUI = () => {
+            // Activate indicators for step 1 or 2
             dom.stepIndicators.forEach((indicator, index) => indicator.classList.toggle('active', index === state.currentStep));
+            
+            // Manually deactivate step 3 if we are on step 1 or 2
+            if (state.currentStep < 2) {
+                dom.stepIndicators[2].classList.remove('active');
+            }
+
+            // Show/hide page content
             dom.stepContents[0].classList.toggle('hidden', state.currentStep !== 0);
             dom.stepContents[1].classList.toggle('hidden', state.currentStep !== 1);
         };
         
-        /**
-         * Controls the right-hand preview panel
-         */
         const updatePreviewPanel = (view) => {
             dom.previewPlaceholder.classList.toggle('hidden', view !== 'placeholder');
             dom.previewLoading.classList.toggle('hidden', view !== 'loading');
@@ -277,20 +279,19 @@
             container.innerHTML = `<div class="text-center text-red-400 p-4 bg-red-900/20 rounded-lg">${message}</div>`;
         };
         
-        // --- 5. Core Logic (HEAVILY MODIFIED) ---
+        // --- 5. Core Logic (Modified) ---
 
         /**
-         * NEW: This is the live-update function.
-         * It replaces the old 'generatePrompt' button click.
+         * Live-update function
          */
         const updateLivePrompt = async () => {
-            // Don't run if we're on Step 1
             if (state.currentStep === 0) return;
 
-            // Show loading in RIGHT panel
+            // *** UI FIX ***: Activate Step 3 indicator
+            dom.stepIndicators[2].classList.add('active'); 
             updatePreviewPanel('loading');
             
-            buildStateFromForm(); // Collects all data
+            buildStateFromForm(); 
 
             const qasText = state.questionsAndAnswers.map(qa => `- Question: ${qa.question}\n- Answer: ${qa.answer}`).join('\n');
             const manualInputSection = state.manualInput ? `\n**Additional User-Provided Details:**\n${state.manualInput}` : '';
@@ -308,34 +309,33 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             const finalPrompt = await callApi("Synthesize the information into a final prompt.", instruction);
             
             if (!finalPrompt || finalPrompt.startsWith("Error:")) {
-                // Show error in prompt box
                 dom.resultText.textContent = `// Error generating prompt. Please try again.\n\n${finalPrompt}`;
-                updatePreviewPanel('result'); // Show result panel (with error)
+                updatePreviewPanel('result');
             } else {
-                // SUCCESS: Show result in RIGHT panel
                 state.generatedPrompt = finalPrompt.trim();
                 dom.resultText.textContent = state.generatedPrompt;
                 updatePreviewPanel('result');
             }
         };
 
-        // Create a debounced version of the live update function
         const debouncedUpdateLivePrompt = debounce(updateLivePrompt, 500);
 
         /**
-         * Loads initial questions (Modified)
-         * Now calls updateLivePrompt() at the end.
+         * Loads initial questions
          */
         const loadInitialQuestions = async () => {
             dom.refineOptions.classList.add('hidden');
             showLoading(dom.questionsContainer, 'APG is preparing your refinement form...');
             
-            const instruction = `You are an expert prompt engineering assistant. Your goal is to help a user refine their initial goal.
-User's Initial Goal: "${state.userTopic}"
-**Your Task:** Generate 5 insightful, clarifying questions to ask the user. The questions should cover different aspects like Audience, Format, Tone, Key Details, and Constraints.
-**Return ONLY a JSON array of 5 strings**, like: ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]`;
-
+            const instruction = `...[omitted for brevity]...**Return ONLY a JSON array of 5 strings**...`;
             const questionText = await callApi("Generate 5 initial questions.", instruction);
+
+            // *** BUG FIX ***: Check for error *before* parsing
+            if (questionText.startsWith("Error:")) {
+                console.error("API Error during question load:", questionText);
+                showError(dom.questionsContainer, questionText);
+                return;
+            }
 
             let questions;
             try {
@@ -350,8 +350,9 @@ User's Initial Goal: "${state.userTopic}"
             }
 
             dom.step2Title.textContent = 'Refine your prompt.';
-            dom.questionsContainer.innerHTML = ''; // Clear loading message
+            dom.questionsContainer.innerHTML = ''; // Clear loading
             
+            // This is your original HTML for the questions
             questions.forEach((q, index) => {
                 const questionEl = document.createElement('div');
                 questionEl.className = 'question-item space-y-2 mb-4';
@@ -378,16 +379,13 @@ User's Initial Goal: "${state.userTopic}"
             });
 
             dom.refineOptions.classList.remove('hidden');
-            dom.addInputBtn.style.display = 'block'; // Make sure it's block
+            dom.addInputBtn.style.display = 'block'; 
             
-            // *** NEW ***
-            // Call the update function once to generate the first prompt
-            updateLivePrompt();
+            updateLivePrompt(); // Call once to generate first prompt
         };
 
         /**
-         * Asks for more questions (Modified)
-         * No longer calls updateLivePrompt, as typing in the new inputs will.
+         * Asks for more questions (Bug Fix)
          */
         const askMoreQuestions = async () => {
             dom.refineOptions.classList.add('hidden');
@@ -399,16 +397,26 @@ User's Initial Goal: "${state.userTopic}"
 
             buildStateFromForm(); 
             const previousQAs = state.questionsAndAnswers.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
-
-            const instruction = `You are an expert prompt assistant...[omitted for brevity]...**Return ONLY a JSON array of 3 strings**...`;
+            const instruction = `...[omitted for brevity]...**Return ONLY a JSON array of 3 strings**...`;
             const questionText = await callApi("Generate 3 more questions.", instruction);
             document.getElementById('more-questions-loading').remove();
+
+            // *** BUG FIX HERE ***
+            // Check for an API error *before* trying to parse.
+            if (questionText.startsWith("Error:")) {
+                alert(questionText); // Show the actual error
+                dom.refineOptions.classList.remove('hidden');
+                return;
+            }
 
             let newQuestions;
             try {
                 newQuestions = JSON.parse(questionText);
-                if (!Array.isArray(newQuestions) || !newQuestions.every(q => typeof q === 'string')) { throw new Error('Invalid JSON format.'); }
+                if (!Array.isArray(newQuestions) || !newQuestions.every(q => typeof q === 'string')) { 
+                    throw new Error('Invalid JSON format.'); 
+                }
             } catch (error) {
+                // This catch block is for JSON.parse errors (chattiness)
                 alert('Could not generate more questions. The AI returned an invalid format.');
                 dom.refineOptions.classList.remove('hidden');
                 return;
@@ -442,12 +450,8 @@ User's Initial Goal: "${state.userTopic}"
             });
             
             dom.refineOptions.classList.remove('hidden');
-            // Typing in the new inputs will trigger the debounced update.
         };
 
-        /**
-         * Builds state from form (Unchanged from your original)
-         */
         const buildStateFromForm = () => {
             state.questionsAndAnswers = [];
             const inputs = dom.questionsContainer.querySelectorAll('input[type="text"][data-question], textarea[data-question]');
@@ -495,8 +499,20 @@ User's Initial Goal: "${state.userTopic}"
             const mainAnswerValue = mainInput.value.trim();
             const followUpContainer = btn.closest('.question-item').querySelector('.follow-up-container');
             const instruction = `...[omitted for brevity]...Return ONLY the text of the single follow-up question.`;
+            
             const followUpQuestionText = await callApi("Generate a follow-up question.", instruction);
-            if (followUpQuestionText && !followUpQuestionText.startsWith("Error:")) {
+
+            // *** BUG FIX ***: Check for error *before* parsing
+            if (followUpQuestionText.startsWith("Error:")) {
+                console.error("Failed to get follow-up:", followUpQuestionText);
+                btn.textContent = 'Add follow-up'; 
+                btn.disabled = false;
+                followUpContainer.innerHTML = `<span class="text-red-400 text-sm">Could not load question. Try again.</span>`;
+                setTimeout(() => { followUpContainer.innerHTML = ''; }, 3000);
+                return;
+            }
+
+            if (followUpQuestionText) {
                 const followUpId = `q-${qIndex}-followup`;
                 followUpContainer.innerHTML = `
                     <label for="${followUpId}" class="block text-lg font-medium text-left text-text-secondary">${followUpQuestionText}</label>
@@ -509,16 +525,13 @@ User's Initial Goal: "${state.userTopic}"
                 `;
                 btn.remove(); 
             } else {
-                console.error("Failed to get follow-up:", followUpQuestionText);
+                // This block will likely not be reached due to the error check above, but it's good practice
                 btn.textContent = 'Add follow-up'; 
                 btn.disabled = false;
-                followUpContainer.innerHTML = `<span class="text-red-400 text-sm">Could not load question. Try again.</span>`;
-                setTimeout(() => { followUpContainer.innerHTML = ''; }, 3000);
             }
         };
 
         // --- 7. Toolbar & Voice JS (Unchanged) ---
-        // [Your original Toolbar and Voice JS code is unchanged]
         const toggleButton = document.getElementById('toggleBtn');
         const optionsMenu = document.getElementById('optionsMenu');
         toggleButton.addEventListener('click', (event) => { event.stopPropagation(); optionsMenu.classList.toggle('visible'); });
@@ -528,6 +541,7 @@ User's Initial Goal: "${state.userTopic}"
         const fileUpload = document.getElementById('fileUpload');
         photoUpload.addEventListener('change', (event) => { if (event.target.files[0]) { optionsMenu.classList.remove('visible'); } });
         fileUpload.addEventListener('change', (event) => { if (event.target.files[0]) { optionsMenu.classList.remove('visible'); } });
+        
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = SpeechRecognition ? new SpeechRecognition() : null;
         let currentTargetInput = null; 
@@ -543,8 +557,7 @@ User's Initial Goal: "${state.userTopic}"
                     if (currentTargetInput.id === 'topic-input') {
                         dom.topicInput.dispatchEvent(new Event('input'));
                     }
-                    // *** NEW *** Trigger live update after voice input
-                    debouncedUpdateLivePrompt();
+                    debouncedUpdateLivePrompt(); // Trigger live update
                 }
             };
             recognition.onerror = (event) => {
@@ -592,29 +605,26 @@ User's Initial Goal: "${state.userTopic}"
 
             updateStepUI(); 
             updatePreviewPanel('placeholder');
+            dom.stepIndicators[2].classList.remove('active'); // Deactivate step 3
         };
 
-        // Listener for Step 1 Textarea
         dom.topicInput.addEventListener('input', () => {
             dom.step1Btn.disabled = dom.topicInput.value.trim() === '';
-            // *** NEW *** Also update live if we are already in step 2
             if (state.currentStep === 1) {
-                state.userTopic = dom.topicInput.value.trim(); // Update state
+                state.userTopic = dom.topicInput.value.trim();
                 debouncedUpdateLivePrompt();
             }
         });
 
-        // Listener for Step 1 "Continue" Button
         dom.step1Btn.addEventListener('click', () => {
             state.userTopic = dom.topicInput.value.trim();
             if (state.userTopic) {
                 state.currentStep = 1;
                 updateStepUI();
-                loadInitialQuestions(); // This will call updateLivePrompt once
+                loadInitialQuestions(); 
             }
         });
 
-        // Listeners for Step 2 Buttons
         dom.moreQuestionsBtn.addEventListener('click', askMoreQuestions);
         dom.addInputBtn.addEventListener('click', () => {
             dom.addInputBtn.style.display = 'none';
@@ -630,14 +640,12 @@ User's Initial Goal: "${state.userTopic}"
                 </div>
             `;
             dom.questionsContainer.appendChild(inputEl);
-            // Typing in this new textarea will trigger the listener below
         });
         
-        // *** NEW *** Main listener for all live updates
+        // Main live update listener
         dom.questionsContainer.addEventListener('input', debouncedUpdateLivePrompt);
 
-
-        // Listeners for Result Panel
+        // Result Panel Listeners
         dom.copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(dom.resultText.textContent).then(() => {
                 dom.copyText.textContent = 'Copied!';
@@ -646,7 +654,7 @@ User's Initial Goal: "${state.userTopic}"
         });
         dom.startOverBtn.addEventListener('click', resetToStart);
 
-        // Your original delegated listeners for per-question buttons
+        // Delegated listeners for per-question buttons
         dom.questionsContainer.addEventListener('click', handleFollowUpClick);
         dom.questionsContainer.addEventListener('click', handleSpecificManualInputClick);
 
