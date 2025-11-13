@@ -14,8 +14,8 @@
     <style>
         :root {
             --background-dark: #121212;
-            --surface-dark: #1E1E1E;
-            --input-bg: #2a2a2c;
+            --surface-dark: #191919; /* Slightly darker surface */
+            --input-bg: #222224; /* Cleaner input */
             --primary-glow: #A78BFA; /* Lavender */
             --secondary-glow: #F472B6; /* Pink */
             --text-primary: #EAEAEA;
@@ -25,17 +25,53 @@
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--background-dark); color: var(--text-primary); }
         .apg-gradient-text { background-image: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow)); background-clip: text; -webkit-background-clip: text; color: transparent; }
-        .glow-button { background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow)); transition: all 0.3s ease; box-shadow: 0 0 15px rgba(167, 139, 250, 0.3); }
-        .glow-button:hover { box-shadow: 0 0 25px rgba(167, 139, 250, 0.5); transform: scale(1.02); }
+        
+        .glow-button { 
+            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow)); 
+            transition: all 0.3s ease; 
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.3);
+            font-weight: 600; /* Added for punch */
+        }
+        .glow-button:hover { 
+            box-shadow: 0 0 25px rgba(167, 139, 250, 0.5); 
+            transform: scale(1.02); 
+        }
         .glow-button:disabled { background: #333; color: #666; box-shadow: none; cursor: not-allowed; }
-        .secondary-button { background-color: var(--surface-dark); border: 1px solid var(--border-color); color: var(--text-primary); transition: background-color 0.2s; }
-        .secondary-button:hover { background-color: rgba(255, 255, 255, 0.1); }
-        textarea:focus, input:focus { outline: none; box-shadow: 0 0 15px rgba(167, 139, 250, 0.2); border-color: var(--border-color-focus) !important; }
+        
+        .secondary-button { 
+            background-color: var(--surface-dark); 
+            border: 1px solid var(--border-color); 
+            color: var(--text-primary); 
+            transition: all 0.2s ease;
+            font-weight: 600; /* Added for punch */
+        }
+        .secondary-button:hover { background-color: #333; }
+        
+        /* --- NEW Input Styling --- */
+        textarea, input[type="text"], pre {
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid transparent; /* Framer-style: borderless by default */
+            border-radius: 0.5rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        textarea:hover, input[type="text"]:hover, pre:hover {
+            border-color: var(--border-color);
+        }
+        textarea:focus, input[type="text"]:focus { 
+            outline: none; 
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.2); 
+            border-color: var(--border-color-focus) !important; 
+        }
+        pre {
+            border-color: var(--border-color); /* Pre always has a border */
+        }
+
+        /* Stepper styling (Unchanged, but looks cleaner with new colors) */
         .step-item.active .step-circle { background-color: var(--primary-glow); border-color: var(--primary-glow); color: var(--background-dark); transform: scale(1.1); }
         .step-item.active .step-text { color: var(--text-primary); font-weight: 600; }
         .step-item .step-circle { transition: all 0.3s ease; }
         .step-line { background-color: var(--border-color); }
-        textarea, input, pre { background-color: var(--input-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 0.5rem; }
 
         .attachment-toolbar { position: relative; display: flex; align-items: center; }
         .toolbar-btn {
@@ -44,7 +80,7 @@
             justify-content: center;
             width: 44px;
             height: 44px;
-            background-color: var(--surface-dark);
+            background-color: transparent; /* Cleaner */
             border: 1px solid var(--border-color);
             border-radius: 50%;
             margin: 0 4px;
@@ -53,7 +89,7 @@
             color: var(--text-secondary);
             transition: all 0.2s ease;
         }
-        .toolbar-btn:hover { background-color: #333; color: var(--text-primary); }
+        .toolbar-btn:hover { background-color: var(--input-bg); color: var(--text-primary); }
         .options-menu {
             position: absolute;
             bottom: 60px;
@@ -101,8 +137,8 @@
                     <div id="step-1-content">
                         <h3 class="text-2xl font-semibold mb-4">What's your topic or goal?</h3>
                         <div class="relative w-full">
-                            <textarea id="topic-input" rows="5" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200" placeholder="e.g., A marketing campaign for a new coffee brand"></textarea>
-                            <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 10px; top: 10px; width: 36px; height: 36px;" title="Voice Input">
+                            <textarea id="topic-input" rows="5" class="w-full p-3 pr-12 rounded-lg transition-colors duration-200" placeholder="e.g., A marketing campaign for a new coffee brand"></textarea>
+                            <button type="button" class="voice-btn toolbar-btn !border-none !bg-transparent" style="position: absolute; right: 10px; top: 10px; width: 36px; height: 36px;" title="Voice Input">
                                 <i class="fa-solid fa-microphone"></i>
                             </button>
                         </div>
@@ -145,29 +181,37 @@
 
         <div class="md:col-span-2">
             <div class="sticky top-8">
-                <div class="bg-surface-dark p-6 rounded-xl border border-border-color min-h-[600px]">
-                    <h3 class="text-2xl font-semibold text-text-primary mb-4">Live Prompt Preview</h3>
+                <div class="bg-surface-dark p-6 rounded-xl border border-border-color min-h-[600px] flex flex-col">
+                    <h3 class="text-2xl font-semibold text-text-primary mb-4 flex-shrink-0">Live Prompt Preview</h3>
                     
-                    <div id="preview-placeholder" class="flex flex-col items-center justify-center h-[500px] text-center text-text-secondary">
-                        <i class="fa-solid fa-file-lines text-6xl mb-4"></i>
-                        <p class="text-lg font-medium">Your generated prompt will appear here.</p>
-                    </div>
+                    <div class="flex-grow flex flex-col">
+                        <div id="preview-placeholder" class="flex flex-col items-center justify-center text-center text-text-secondary h-full flex-grow">
+                            <i class="fa-solid fa-file-lines text-6xl mb-4 opacity-50"></i>
+                            <p class="text-lg font-medium">Your generated prompt will appear here.</p>
+                        </div>
 
-                    <div id="preview-loading" class="hidden flex-col items-center justify-center h-[500px] text-center text-primary-glow">
-                        <i class="fa-solid fa-spinner fa-spin text-6xl mb-4"></i>
-                        <p class="text-lg font-medium">APG is generating...</p>
-                    </div>
-                    
-                    <div id="preview-result" class="hidden">
-                        <div id="result-container" class="text-left">
-                            <pre id="result-text" class="w-full p-4 rounded-lg overflow-y-auto whitespace-pre-wrap text-sm min-h-[24rem] max-h-[40rem]"></pre>
-                            <div class="flex flex-col gap-4 mt-6">
-                                <button id="copy-btn" class="glow-button !rounded-full text-white font-semibold px-8 py-3 w-full"><span id="copy-text">Copy Prompt</span></button>
-                                <button id="refine-more-btn" class="secondary-button !rounded-full font-semibold px-8 py-3 w-full">Refine More</button>
-                                <button id="start-over-btn" class="secondary-button !rounded-full font-semibold px-8 py-3 w-full">Start Over</button>
+                        <div id="preview-loading" class="hidden flex-col items-center justify-center text-center text-primary-glow h-full flex-grow">
+                            <i class="fa-solid fa-spinner fa-spin text-6xl mb-4"></i>
+                            <p class="text-lg font-medium">APG is generating...</p>
+                        </div>
+                        
+                        <div id="preview-result" class="hidden flex-grow flex flex-col h-full">
+                            <div id="result-container" class="text-left relative flex-grow flex flex-col">
+                                
+                                <button id="copy-btn" class="absolute top-2 right-2 p-2 rounded-lg bg-input-bg text-text-secondary hover:text-text-primary transition-all z-10" title="Copy to clipboard">
+                                    <i class="fa-solid fa-clipboard"></i>
+                                    <span id="copy-text" class="hidden absolute -top-8 right-0 bg-primary-glow text-background-dark px-2 py-1 rounded text-sm whitespace-nowrap">Copied!</span>
+                                </button>
+                                
+                                <pre id="result-text" class="w-full p-4 rounded-lg overflow-y-auto whitespace-pre-wrap text-sm flex-grow min-h-[300px]"></pre>
+                                
+                                <div class="flex flex-col gap-4 mt-6 flex-shrink-0">
+                                    <button id="refine-more-btn" class="secondary-button !rounded-full font-semibold px-8 py-3 w-full">Refine More</button>
+                                    <button id="start-over-btn" class="secondary-button !rounded-full font-semibold px-8 py-3 w-full !border-red-500/30 hover:!bg-red-500/10 hover:!border-red-500/50">Start Over</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
@@ -175,7 +219,7 @@
     </div>
     
     <script>
-        // --- 1. DOM Elements ---
+        // --- 1. DOM Elements (Unchanged) ---
         const dom = {
             stepIndicators: [document.getElementById('step-1-indicator'), document.getElementById('step-2-indicator'), document.getElementById('step-3-indicator')],
             stepContents: [document.getElementById('step-1-content'), document.getElementById('step-2-content'), document.getElementById('step-3-content')],
@@ -187,15 +231,11 @@
             addInputBtn: document.getElementById('add-input-btn'),
             moreQuestionsBtn: document.getElementById('more-questions-btn'),
             generatePromptBtn: document.getElementById('generate-prompt-btn'),
-            
-            // Result elements are now in the right panel, but IDs are the same
             resultText: document.getElementById('result-text'),
             copyBtn: document.getElementById('copy-btn'),
-            copyText: document.getElementById('copy-text'),
+            copyText: document.getElementById('copy-text'), // This is now the tooltip
             refineMoreBtn: document.getElementById('refine-more-btn'),
             startOverBtn: document.getElementById('start-over-btn'),
-            
-            // NEW DOM elements for the preview panel
             previewPlaceholder: document.getElementById('preview-placeholder'),
             previewLoading: document.getElementById('preview-loading'),
             previewResult: document.getElementById('preview-result'),
@@ -233,30 +273,18 @@
             }
         }
 
-        // --- 4. UI Update Logic (Modified) ---
-
-        /**
-         * This function now ONLY controls the left panel (Steps 1 & 2)
-         */
+        // --- 4. UI Update Logic (Unchanged) ---
         const updateStepUI = () => {
             dom.stepIndicators.forEach((indicator, index) => indicator.classList.toggle('active', index === state.currentStep));
-            // Only hide/show step 1 and 2. Step 3 is never shown.
             dom.stepContents[0].classList.toggle('hidden', state.currentStep !== 0);
             dom.stepContents[1].classList.toggle('hidden', state.currentStep !== 1);
-            dom.stepContents[2].classList.add('hidden'); // Step 3 content is always hidden
+            dom.stepContents[2].classList.add('hidden'); 
         };
-        
-        /**
-         * NEW function to control the right-hand preview panel
-         * @param {'placeholder' | 'loading' | 'result'} view
-         */
         const updatePreviewPanel = (view) => {
             dom.previewPlaceholder.classList.toggle('hidden', view !== 'placeholder');
             dom.previewLoading.classList.toggle('hidden', view !== 'loading');
             dom.previewResult.classList.toggle('hidden', view !== 'result');
         };
-
-        // These are your original loading/error functions (unchanged)
         const showLoading = (container, message) => {
             container.innerHTML = `<div class="text-center text-text-secondary">${message}</div>`;
         };
@@ -264,11 +292,10 @@
             container.innerHTML = `<div class="text-center text-red-400 p-4 bg-red-900/20 rounded-lg">${message}</div>`;
         };
         
-        // --- 5. Step 2: Question Logic (Your original code) ---
-
+        // --- 5. Step 2: Question Logic (Unchanged) ---
         const loadInitialQuestions = async () => {
             state.currentStep = 1;
-            updateStepUI(); // This will show Step 2
+            updateStepUI(); 
             dom.refineOptions.classList.add('hidden');
             showLoading(dom.questionsContainer, 'APG is preparing your refinement form...');
             
@@ -278,7 +305,6 @@ User's Initial Goal: "${state.userTopic}"
 **Return ONLY a JSON array of 5 strings**, like: ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]`;
 
             const questionText = await callApi("Generate 5 initial questions.", instruction);
-
             let questions;
             try {
                 questions = JSON.parse(questionText);
@@ -290,19 +316,16 @@ User's Initial Goal: "${state.userTopic}"
                 showError(dom.questionsContainer, "Error: Could not generate questions. The AI returned an invalid format. Please try again.");
                 return;
             }
-
             dom.step2Title.textContent = 'Refine your prompt.';
-            dom.questionsContainer.innerHTML = ''; // Clear loading message
-            
-            // Create the form (This is your original HTML structure)
+            dom.questionsContainer.innerHTML = ''; 
             questions.forEach((q, index) => {
                 const questionEl = document.createElement('div');
                 questionEl.className = 'question-item space-y-2 mb-4';
                 questionEl.innerHTML = `
                     <label for="q-${index}" class="block text-lg font-medium text-left">${q}</label>
                     <div class="relative w-full">
-                        <input type="text" id="q-${index}" data-question="${q}" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200" placeholder="Your answer...">
-                        <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;" title="Voice Input">
+                        <input type="text" id="q-${index}" data-question="${q}" class="w-full p-3 pr-12 rounded-lg transition-colors duration-200" placeholder="Your answer...">
+                        <button type="button" class="voice-btn toolbar-btn !border-none !bg-transparent" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;" title="Voice Input">
                             <i class="fa-solid fa-microphone"></i>
                         </button>
                     </div>
@@ -319,33 +342,27 @@ User's Initial Goal: "${state.userTopic}"
                 `;
                 dom.questionsContainer.appendChild(questionEl);
             });
-
             dom.refineOptions.classList.remove('hidden');
             dom.addInputBtn.style.display = 'inline-block'; 
         };
 
         const askMoreQuestions = async () => {
             dom.refineOptions.classList.add('hidden');
-            
             const loadingEl = document.createElement('div');
             loadingEl.id = 'more-questions-loading';
             loadingEl.className = 'text-center text-text-secondary mt-4';
             loadingEl.textContent = 'APG is thinking of more questions...';
             dom.questionsContainer.appendChild(loadingEl);
-
             buildStateFromForm(); 
             const previousQAs = state.questionsAndAnswers.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
-
             const instruction = `You are an expert prompt assistant. A user is refining a goal.
 User's Goal: "${state.userTopic}"
 Previously asked questions and answers:
 ${previousQAs || 'None yet.'}
 **Your Task:** Ask 3 *new*, *different* questions that haven't been covered.
 **Return ONLY a JSON array of 3 strings**, like: ["New Q1", "New Q2", "New Q3"]`;
-
             const questionText = await callApi("Generate 3 more questions.", instruction);
             document.getElementById('more-questions-loading').remove();
-
             let newQuestions;
             try {
                 newQuestions = JSON.parse(questionText);
@@ -358,7 +375,6 @@ ${previousQAs || 'None yet.'}
                 dom.refineOptions.classList.remove('hidden');
                 return;
             }
-
             const baseIndex = dom.questionsContainer.querySelectorAll('.question-item').length;
             newQuestions.forEach((q, index) => {
                 const newIndex = baseIndex + index;
@@ -367,8 +383,8 @@ ${previousQAs || 'None yet.'}
                 questionEl.innerHTML = `
                     <label for="q-${newIndex}" class="block text-lg font-medium text-left">${q}</label>
                     <div class="relative w-full">
-                        <input type="text" id="q-${newIndex}" data-question="${q}" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200" placeholder="Your answer...">
-                        <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;" title="Voice Input">
+                        <input type="text" id="q-${newIndex}" data-question="${q}" class="w-full p-3 pr-12 rounded-lg transition-colors duration-200" placeholder="Your answer...">
+                        <button type="button" class="voice-btn toolbar-btn !border-none !bg-transparent" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;" title="Voice Input">
                             <i class="fa-solid fa-microphone"></i>
                         </button>
                     </div>
@@ -385,17 +401,12 @@ ${previousQAs || 'None yet.'}
                 `;
                 dom.questionsContainer.appendChild(questionEl);
             });
-            
             dom.refineOptions.classList.remove('hidden');
         };
 
-        /**
-         * This is your original buildStateFromForm function
-         */
         const buildStateFromForm = () => {
             state.questionsAndAnswers = [];
             const inputs = dom.questionsContainer.querySelectorAll('input[type="text"][data-question], textarea[data-question]');
-            
             inputs.forEach(input => {
                 state.questionsAndAnswers.push({
                     question: input.dataset.question,
@@ -406,7 +417,6 @@ ${previousQAs || 'None yet.'}
             state.manualInput = manualInput ? manualInput.value.trim() : '';
         };
 
-        // --- Your original per-question button handlers (Unchanged) ---
         const handleSpecificManualInputClick = (event) => {
             if (!event.target.classList.contains('manual-input-btn-specific')) { return; }
             const btn = event.target;
@@ -419,8 +429,8 @@ ${previousQAs || 'None yet.'}
             manualInputContainer.innerHTML = `
                 <label for="${inputId}" class="block text-lg font-medium text-left text-text-secondary">Additional details for this question:</label>
                 <div class="relative w-full">
-                    <textarea id="${inputId}" data-question="(Manual Details for: ${mainQuestionText})" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200 mt-2" rows="3" placeholder="Add your specific details here..."></textarea>
-                    <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 10px; top: 10px; width: 36px; height: 36px;" title="Voice Input">
+                    <textarea id="${inputId}" data-question="(Manual Details for: ${mainQuestionText})" class="w-full p-3 pr-12 rounded-lg transition-colors duration-200 mt-2" rows="3" placeholder="Add your specific details here..."></textarea>
+                    <button type="button" class="voice-btn toolbar-btn !border-none !bg-transparent" style="position: absolute; right: 10px; top: 10px; width: 36px; height: 36px;" title="Voice Input">
                         <i class="fa-solid fa-microphone"></i>
                     </button>
                 </div>
@@ -449,8 +459,8 @@ Return ONLY the text of the single follow-up question.`;
                 followUpContainer.innerHTML = `
                     <label for="${followUpId}" class="block text-lg font-medium text-left text-text-secondary">${followUpQuestionText}</label>
                     <div class="relative w-full">
-                        <input type="text" id="${followUpId}" data-question="${followUpQuestionText}" class="w-full p-3 pr-12 rounded-lg border border-border-color transition-colors duration-200 mt-2" placeholder="Your answer...">
-                        <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;" title="Voice Input">
+                        <input type="text" id="${followUpId}" data-question="${followUpQuestionText}" class="w-full p-3 pr-12 rounded-lg transition-colors duration-200 mt-2" placeholder="Your answer...">
+                        <button type="button" class="voice-btn toolbar-btn !border-none !bg-transparent" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;" title="Voice Input">
                             <i class="fa-solid fa-microphone"></i>
                         </button>
                     </div>
@@ -465,24 +475,14 @@ Return ONLY the text of the single follow-up question.`;
             }
         };
 
-        // --- 6. Step 3: Prompt Generation Logic (MODIFIED) ---
-        /**
-         * This function is now MODIFIED to show the result in the right-hand panel
-         * instead of moving to Step 3.
-         */
+        // --- 6. Step 3: Prompt Generation Logic (Unchanged) ---
         const generatePrompt = async () => {
-            // Manually activate step 3 indicator
             dom.stepIndicators[2].classList.add('active');
-            
-            // Show loading in RIGHT panel
             updatePreviewPanel('loading');
             dom.refineOptions.classList.add('hidden');
-            
-            buildStateFromForm(); // Collects all data
-
+            buildStateFromForm(); 
             const qasText = state.questionsAndAnswers.map(qa => `- Question: ${qa.question}\n- Answer: ${qa.answer}`).join('\n');
             const manualInputSection = state.manualInput ? `\n**Additional User-Provided Details:**\n${state.manualInput}` : '';
-
             const instruction = `Your role is an expert prompt engineer. Your ONLY task is to synthesize the user's goal and their answers into a single, comprehensive, and detailed prompt ready for another AI model.
 You MUST NOT answer or fulfill the user's request yourself. You are building the prompt FOR them.
 The final output must ONLY be the generated prompt text, with no extra conversation, preamble, or explanations like "Here is your prompt:".
@@ -492,25 +492,20 @@ ${state.userTopic}
 ${qasText}
 ${manualInputSection}
 Now, generate the final, copy-and-paste-ready prompt below.`;
-
             const finalPrompt = await callApi("Synthesize the information into a final prompt.", instruction);
-            
             if (!finalPrompt || finalPrompt.startsWith("Error:")) {
-                // Show error in left panel, reset right panel
                 showError(dom.questionsContainer, finalPrompt);
                 updatePreviewPanel('placeholder');
                 dom.refineOptions.classList.remove('hidden');
-                dom.stepIndicators[2].classList.remove('active'); // De-activate step 3 indicator
+                dom.stepIndicators[2].classList.remove('active'); 
             } else {
-                // SUCCESS: Show result in RIGHT panel
                 state.generatedPrompt = finalPrompt.trim();
                 dom.resultText.textContent = state.generatedPrompt;
                 updatePreviewPanel('result');
-                // We stay on Step 2 in the left panel
             }
         };
 
-        // --- 7. Toolbar & Voice JS (Your original code, unchanged) ---
+        // --- 7. Toolbar & Voice JS (Unchanged) ---
         const toggleButton = document.getElementById('toggleBtn');
         const optionsMenu = document.getElementById('optionsMenu');
         toggleButton.addEventListener('click', (event) => {
@@ -582,21 +577,19 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             document.head.appendChild(style);
         }
         
-        // --- 8. Event Listeners & Init (Modified) ---
+        // --- 8. Event Listeners & Init (Copy Button Logic is MODIFIED) ---
         const resetToStart = () => {
             state = { currentStep: 0, userTopic: '', questionsAndAnswers: [], manualInput: '', generatedPrompt: '' };
             dom.topicInput.value = '';
             dom.questionsContainer.innerHTML = '';
             dom.step1Btn.disabled = true;
             dom.refineOptions.classList.add('hidden');
-            
             const manualInputEl = document.getElementById('manual-input-div');
             if(manualInputEl) manualInputEl.remove();
             dom.addInputBtn.style.display = 'inline-block';
-
-            updateStepUI(); // Resets left panel
-            updatePreviewPanel('placeholder'); // Resets right panel
-            dom.stepIndicators[2].classList.remove('active'); // De-activate step 3
+            updateStepUI(); 
+            updatePreviewPanel('placeholder'); 
+            dom.stepIndicators[2].classList.remove('active'); 
         };
 
         dom.topicInput.addEventListener('input', () => {
@@ -610,7 +603,6 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             }
         });
 
-        // Your original Step 2 listeners
         dom.moreQuestionsBtn.addEventListener('click', askMoreQuestions);
         dom.addInputBtn.addEventListener('click', () => {
             dom.addInputBtn.style.display = 'none';
@@ -619,8 +611,8 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
             inputEl.innerHTML = `
                 <label for="manual-input" class="block text-sm font-medium mt-4 mb-2 text-left">Add any other details that weren't covered:</label>
                 <div class="relative w-full">
-                    <textarea id="manual-input" rows="4" class="w-full p-3 pr-12 rounded-lg border border-border-color"></textarea>
-                    <button type="button" class="voice-btn toolbar-btn" style="position: absolute; right: 10px; top: 10px; width: 36px; height: 36px;" title="Voice Input">
+                    <textarea id="manual-input" rows="4" class="w-full p-3 pr-12 rounded-lg"></textarea>
+                    <button type="button" class="voice-btn toolbar-btn !border-none !bg-transparent" style="position: absolute; right: 10px; top: 10px; width: 36px; height: 36px;" title="Voice Input">
                         <i class="fa-solid fa-microphone"></i>
                     </button>
                 </div>
@@ -629,23 +621,28 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
         });
         dom.generatePromptBtn.addEventListener('click', generatePrompt);
 
-        // MODIFIED: This button now hides the preview and shows the refine options
         dom.refineMoreBtn.addEventListener('click', () => {
             updatePreviewPanel('placeholder');
             dom.refineOptions.classList.remove('hidden');
-            dom.stepIndicators[2].classList.remove('active'); // De-activate step 3
+            dom.stepIndicators[2].classList.remove('active'); 
         });
 
+        // --- *** MODIFIED COPY BUTTON LISTENER *** ---
         dom.copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(dom.resultText.textContent).then(() => {
-                dom.copyText.textContent = 'Copied!';
-                setTimeout(() => { dom.copyText.textContent = 'Copy Prompt'; }, 2000);
+                // dom.copyText is now the tooltip
+                dom.copyText.classList.remove('hidden'); 
+                const copyIcon = dom.copyBtn.querySelector('i');
+                copyIcon.className = 'fa-solid fa-check text-primary-glow';
+                
+                setTimeout(() => { 
+                    dom.copyText.classList.add('hidden');
+                    copyIcon.className = 'fa-solid fa-clipboard';
+                }, 2000);
             });
         });
 
         dom.startOverBtn.addEventListener('click', resetToStart);
-
-        // Your original delegated listeners for per-question buttons
         dom.questionsContainer.addEventListener('click', handleFollowUpClick);
         dom.questionsContainer.addEventListener('click', handleSpecificManualInputClick);
 
