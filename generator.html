@@ -175,7 +175,11 @@
     </div>
     
     <script>
-        // --- 0. Debounce Helper Function ---
+        // --- 0. HELPER FUNCTIONS ---
+        
+        /**
+         * Prevents a function from running too often.
+         */
         function debounce(func, delay = 500) {
             let timeoutId;
             return (...args) => {
@@ -186,7 +190,26 @@
             };
         }
 
-        // --- 1. DOM Elements (Modified) ---
+        /**
+         * *** NEW BUG FIX FUNCTION ***
+         * Extracts a JSON string (like [...] or {...}) from a larger text response.
+         * This prevents crashes if the AI sends "Here is..." before the JSON.
+         */
+        function extractJson(text) {
+            if (!text || typeof text !== 'string') return null;
+            
+            // This regex finds the first or longest string starting with [ and ending with ]
+            // or starting with { and ending with }
+            const jsonRegex = /\[.*\]|\{.*\}/s;
+            const match = text.match(jsonRegex);
+            
+            if (match && match[0]) {
+                return match[0];
+            }
+            return null; // No JSON found
+        }
+
+        // --- 1. DOM Elements ---
         const dom = {
             stepIndicators: [
                 document.getElementById('step-1-indicator'), 
@@ -215,7 +238,7 @@
             previewResult: document.getElementById('preview-result'),
         };
 
-        // --- 2. State (Unchanged) ---
+        // --- 2. State ---
         let state = {
             currentStep: 0,
             userTopic: '',
@@ -247,7 +270,7 @@
             }
         }
 
-        // --- 4. UI Update Logic (Modified) ---
+        // --- 4. UI Update Logic (Unchanged) ---
         const updateStepUI = () => {
             dom.stepIndicators.forEach((indicator, index) => indicator.classList.toggle('active', index === state.currentStep));
             if (state.currentStep < 2) {
@@ -270,7 +293,7 @@
             container.innerHTML = `<div class="text-center text-red-400 p-4 bg-red-900/20 rounded-lg">${message}</div>`;
         };
         
-        // --- 5. Core Logic (Modified) ---
+        // --- 5. Core Logic ---
 
         const updateLivePrompt = async () => {
             if (state.currentStep === 0) return;
@@ -283,7 +306,6 @@
             const qasText = state.questionsAndAnswers.map(qa => `- Question: ${qa.question}\n- Answer: ${qa.answer}`).join('\n');
             const manualInputSection = state.manualInput ? `\n**Additional User-Provided Details:**\n${state.manualInput}` : '';
 
-            // This is the instruction for the *final prompt*
             const instruction = `Your role is an expert prompt engineer. Your ONLY task is to synthesize the user's goal and their answers into a single, comprehensive, and detailed prompt ready for another AI model.
 You MUST NOT answer or fulfill the user's request yourself. You are building the prompt FOR them.
 The final output must ONLY be the generated prompt text, with no extra conversation, preamble, or explanations.
@@ -309,13 +331,12 @@ Now, generate the final, copy-and-paste-ready prompt below.`;
         const debouncedUpdateLivePrompt = debounce(updateLivePrompt, 500);
 
         /**
-         * Loads initial questions
+         * Loads initial questions (Bug Fix)
          */
         const loadInitialQuestions = async () => {
             dom.refineOptions.classList.add('hidden');
             showLoading(dom.questionsContainer, 'APG is preparing your refinement form...');
             
-            // *** BUG FIX: Stricter Instruction ***
             const instruction = `You are an expert prompt engineering assistant. Your goal is to help a user refine their initial goal.
 User's Initial Goal: "${state.userTopic}"
 **Your Task:** Generate 5 insightful, clarifying questions to ask the user.
@@ -323,16 +344,22 @@ User's Initial Goal: "${state.userTopic}"
 
             const questionText = await callApi("Generate 5 initial questions.", instruction);
 
-            // *** BUG FIX: Check for error *before* parsing ***
             if (questionText.startsWith("Error:")) {
                 console.error("API Error during question load:", questionText);
                 showError(dom.questionsContainer, questionText);
-                return; // Stop execution
+                return;
             }
 
             let questions;
             try {
-                questions = JSON.parse(questionText);
+                // *** NEW BUG FIX: Use the extractor ***
+                const jsonString = extractJson(questionText);
+                if (!jsonString) {
+                    // This catches if the AI was chatty and no JSON was found
+                    throw new Error("AI returned invalid text. Could not find JSON.");
+                }
+                questions = JSON.parse(jsonString);
+                
                 if (!Array.isArray(questions) || questions.length === 0 || !questions.every(q => typeof q === 'string')) {
                     throw new Error('Invalid JSON array format.');
                 }
@@ -390,7 +417,6 @@ User's Initial Goal: "${state.userTopic}"
             buildStateFromForm(); 
             const previousQAs = state.questionsAndAnswers.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
             
-            // *** BUG FIX: Stricter Instruction ***
             const instruction = `You are an expert prompt assistant. A user is refining a goal.
 User's Goal: "${state.userTopic}"
 Previously asked questions and answers:
@@ -401,16 +427,21 @@ ${previousQAs || 'None yet.'}
             const questionText = await callApi("Generate 3 more questions.", instruction);
             document.getElementById('more-questions-loading').remove();
 
-            // *** BUG FIX: Check for error *before* parsing ***
             if (questionText.startsWith("Error:")) {
-                alert(questionText); // Show the actual error
+                alert(questionText);
                 dom.refineOptions.classList.remove('hidden');
                 return;
             }
 
             let newQuestions;
             try {
-                newQuestions = JSON.parse(questionText);
+                // *** NEW BUG FIX: Use the extractor ***
+                const jsonString = extractJson(questionText);
+                if (!jsonString) {
+                    throw new Error("AI returned invalid text. Could not find JSON.");
+                }
+                newQuestions = JSON.parse(jsonString);
+
                 if (!Array.isArray(newQuestions) || !newQuestions.every(q => typeof q === 'string')) { 
                     throw new Error('Invalid JSON format.'); 
                 }
@@ -465,7 +496,7 @@ ${previousQAs || 'None yet.'}
             state.manualInput = manualInput ? manualInput.value.trim() : '';
         };
 
-        // --- Per-question button handlers (Bug Fix) ---
+        // --- Per-question button handlers (Unchanged) ---
         const handleSpecificManualInputClick = (event) => {
             if (!event.target.classList.contains('manual-input-btn-specific')) { return; }
             const btn = event.target;
@@ -498,7 +529,6 @@ ${previousQAs || 'None yet.'}
             const mainAnswerValue = mainInput.value.trim();
             const followUpContainer = btn.closest('.question-item').querySelector('.follow-up-container');
             
-            // *** BUG FIX: Stricter Instruction ***
             const instruction = `You are a helpful assistant. The user's main goal is "${state.userTopic}".
 The main question you just asked was: "${mainQuestionText}"
 The user's answer to that question is: "${mainAnswerValue || '(No answer yet)'}"
@@ -507,7 +537,6 @@ Based on this, ask ONE single, concise, relevant follow-up question to get more 
             
             const followUpQuestionText = await callApi("Generate a follow-up question.", instruction);
 
-            // *** BUG FIX: Check for error ***
             if (!followUpQuestionText || followUpQuestionText.startsWith("Error:")) {
                 console.error("Failed to get follow-up:", followUpQuestionText);
                 btn.textContent = 'Add follow-up'; 
@@ -591,7 +620,7 @@ Based on this, ask ONE single, concise, relevant follow-up question to get more 
             document.head.appendChild(style);
         }
         
-        // --- 8. Event Listeners & Init (Modified) ---
+        // --- 8. Event Listeners & Init (Unchanged) ---
         const resetToStart = () => {
             state = { currentStep: 0, userTopic: '', questionsAndAnswers: [], manualInput: '', generatedPrompt: '' };
             dom.topicInput.value = '';
